@@ -19,7 +19,10 @@ library
   exposed-modules:     System.Log.Heavy
   -- other-modules:       
   -- other-extensions:    
-  build-depends:       base >=4.8 && <4.9,
+  build-depends:       base >=4.8 && <5.0,
+                       mtl >= 2.2.1,
+                       template-haskell >= 2.10.0,
+                       bytestring >= 0.10.6,
                        fast-logger >= 2.4.10,
                        hsyslog >= 5
   hs-source-dirs:      src
