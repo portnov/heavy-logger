@@ -1,6 +1,7 @@
 {-# LANGUAGE OverloadedStrings, TypeSynonymInstances, FlexibleInstances, ExistentialQuantification, TypeFamilies, GeneralizedNewtypeDeriving, StandaloneDeriving #-}
 
 import Control.Monad.Trans
+import Control.Monad.Logger (LogLevel (..))
 import Data.Monoid
 import System.Environment
 import System.IO
@@ -12,6 +13,7 @@ selectBackend :: String -> LogBackend
 selectBackend "syslog" = LogBackend $ defaultSyslogSettings
 selectBackend "stderr" = LogBackend $ defStderrSettings
 selectBackend "stdout" = LogBackend $ defStdoutSettings
+selectBackend "test" = LogBackend $ defStderrSettings `AndAlso` defaultSyslogSettings
 selectBackend path = LogBackend $ defFileSettings path
 
 main :: IO ()
@@ -23,7 +25,7 @@ main = do
       liftIO $ putStr "Your name? "
       liftIO $ hFlush stdout
       name <- liftIO $ getLine
-      logMessage (LogMessage Info [] undefined (toLogStr ("name was " :: String) <> toLogStr name))
+      logMessage (LogMessage LevelInfo [] undefined (toLogStr ("name was " :: String) <> toLogStr name))
       liftIO $ putStrLn $ "Hello, " ++ name
 
 
