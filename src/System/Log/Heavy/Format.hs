@@ -1,38 +1,54 @@
 {-# LANGUAGE OverloadedStrings, TypeSynonymInstances, FlexibleInstances, ExistentialQuantification, TypeFamilies, GeneralizedNewtypeDeriving, StandaloneDeriving, MultiParamTypeClasses, UndecidableInstances #-}
 
-module System.Log.Heavy.Format where
+module System.Log.Heavy.Format
+  ( FormatItem (..),
+    LogFormat,
+    defaultLogFormat,
+    formatLogMessage,
+    parseFormat, parseFormat'
+  ) where
 
+import Control.Applicative
+import Control.Monad
 import Control.Monad.Logger (MonadLogger (..), LogLevel (..))
 import Data.List (intersperse, intercalate)
 import Data.String
+import Data.Char
+import Data.Maybe
 import qualified Data.Text as T
 import qualified Data.ByteString as B
+import Data.Attoparsec.ByteString
 import System.Log.FastLogger as F
+import Prelude hiding (takeWhile)
 
 import System.Log.Heavy.Types
 
+-- | Log message formatting item
 data FormatItem =
-    FLevel
-  | FSource
-  | FLocation
-  | FTime
-  | FMessage
-  | FString B.ByteString
+    FLevel               -- ^ Log level
+  | FSource              -- ^ Log message source (module)
+  | FLocation            -- ^ Log message source (full location)
+  | FTime                -- ^ Log message time
+  | FMessage             -- ^ Log message itself
+  | FString B.ByteString -- ^ Fixed string, e.g. some kind of separator
   deriving (Eq, Show)
 
 instance IsString FormatItem where
   fromString str = FString $ fromString str
 
+-- | Log message format description
 type LogFormat = [FormatItem]
 
 instance IsString LogFormat where
-  fromString str = [fromString str]
+  fromString str = parseFormat' (fromString str)
 
+-- | Default log message format.
+-- Corresponds to: @$time [$level] $source: $message\n@
 defaultLogFormat :: LogFormat
-defaultLogFormat = [FTime, FLevel, FSource, FMessage, FString "\n"]
+defaultLogFormat = parseFormat' "$time [$level] $source: $message\n"
 
 formatLogMessage :: LogFormat -> LogMessage -> FormattedTime -> LogStr
-formatLogMessage format m ftime = mconcat $ intersperse (toLogStr (" " :: B.ByteString)) $ map go format
+formatLogMessage format m ftime = mconcat $ map go format
   where
     go :: FormatItem -> LogStr
     go FLevel = toLogStr $ showLevel $ lmLevel m
@@ -47,4 +63,47 @@ formatLogMessage format m ftime = mconcat $ intersperse (toLogStr (" " :: B.Byte
     showLevel LevelWarn = "warning"
     showLevel LevelError = "error"
     showLevel (LevelOther x) = T.unpack x
+
+-- | Parse log message format description string.
+-- Variables substitution in @${}@-style is supported.
+-- Only following variables can be used: 
+-- level, source, location, time, message.
+parseFormat :: B.ByteString -> Either String LogFormat
+parseFormat formatstr = parseOnly (pFormat <* endOfInput) formatstr
+
+-- | Version of parseFormat which throws an error if parsing failed.
+parseFormat' :: B.ByteString -> LogFormat
+parseFormat' formatstr =
+  case parseFormat formatstr of
+    Right format -> format
+    Left err -> error err
+
+pFormat :: Parser LogFormat
+pFormat = many1 pItem
+
+pItem :: Parser FormatItem
+pItem = choice [
+          item "level" FLevel,
+          item "source" FSource,
+          item "location" FLocation,
+          item "time" FTime,
+          item "message" FMessage,
+          fixed ]
+  where
+    item :: String -> FormatItem -> Parser FormatItem
+    item str item = (do
+      string "$"
+      next <- optional $ string "$"
+      case next of
+        Just _ -> return $ FString "$"
+        Nothing -> do
+          mbBrace <- optional $ string "{"
+          string (fromString str)
+          when (isJust mbBrace) $ do
+            string "}"
+            return ()
+          return item) <?> str
+
+    fixed :: Parser FormatItem
+    fixed = FString <$> takeWhile1 (\w -> chr (fromIntegral w) /= '$')
 

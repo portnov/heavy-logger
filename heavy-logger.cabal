@@ -29,6 +29,7 @@ library
                        template-haskell >= 2.10.0,
                        bytestring >= 0.10.6,
                        text >= 1.2.2.1,
+                       attoparsec >= 0.13.1.0,
                        fast-logger >= 2.4.10,
                        monad-logger >= 0.3.22,
                        hsyslog >= 5

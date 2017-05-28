@@ -58,7 +58,7 @@ defaultSyslogSettings :: SyslogSettings
 defaultSyslogSettings = SyslogSettings defaultLogFilter defaultSyslogFormat "application" [] Syslog.User
 
 defaultSyslogFormat :: LogFormat
-defaultSyslogFormat = [FLevel, FSource, FMessage]
+defaultSyslogFormat = "[$level] $source: $message"
 
 instance IsLogBackend SyslogSettings where
     withLoggingB settings runner (LoggingT actions) = do
