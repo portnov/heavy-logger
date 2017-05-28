@@ -1,6 +1,20 @@
 {-# LANGUAGE OverloadedStrings, TypeSynonymInstances, FlexibleInstances, ExistentialQuantification, TypeFamilies, GeneralizedNewtypeDeriving, StandaloneDeriving, MultiParamTypeClasses, UndecidableInstances #-}
 
-module System.Log.Heavy.Backends where
+module System.Log.Heavy.Backends
+  (
+  -- $description
+  -- * Backends
+  FastLoggerSettings (..),
+  SyslogSettings (..),
+  -- * Default settings
+  defStdoutSettings,
+  defStderrSettings,
+  defFileSettings,
+  defaultSyslogSettings,
+  defaultSyslogFormat,
+  -- * Utilities for other backends implementation
+  checkLogLevel
+  ) where
 
 import Control.Monad
 import Control.Monad.Trans (liftIO)
@@ -15,18 +29,29 @@ import System.Log.FastLogger as F
 import System.Log.Heavy.Types
 import System.Log.Heavy.Format
 
+-- $description
+--
+-- This module contains several implementation of logging backend.
+-- A backend is some kind of target, where your messages will go.
+-- Each backend has its own specific settings.
+
+-- | Settings of fast-logger backend. This mostly reflects settings of fast-logger itself.
 data FastLoggerSettings = FastLoggerSettings {
-    lsFilter :: LogFilter,
-    lsFormat :: LogFormat,
-    lsType :: F.LogType
+    lsFilter :: LogFilter -- ^ Log messages filter
+  , lsFormat :: LogFormat -- ^ Log message format
+  , lsType :: F.LogType   -- ^ Fast-logger target settings
   }
 
+-- | Default settings for fast-logger stdout output
 defStdoutSettings :: FastLoggerSettings
 defStdoutSettings = FastLoggerSettings defaultLogFilter defaultLogFormat (F.LogStdout F.defaultBufSize)
 
+-- | Default settings for fast-logger stderr output
 defStderrSettings :: FastLoggerSettings
 defStderrSettings = FastLoggerSettings defaultLogFilter defaultLogFormat (F.LogStderr F.defaultBufSize)
 
+-- | Default settings for fast-logger file output.
+-- This implies log rotation when log file size reaches 10Mb.
 defFileSettings :: FilePath -> FastLoggerSettings
 defFileSettings path = FastLoggerSettings defaultLogFilter defaultLogFormat (F.LogFile spec F.defaultBufSize)
   where spec = F.FileLogSpec path (10*1024*1024) 3
@@ -46,17 +71,23 @@ instance IsLogBackend FastLoggerSettings where
           when (checkLogLevel fltr m) $ do
             logger $ formatLogMessage format m
 
+-- | Settings for syslog backend. This mostly reflects syslog API.
 data SyslogSettings = SyslogSettings {
-    ssFilter :: LogFilter,
-    ssFormat :: LogFormat,
-    ssIdent :: String,
-    ssOptions :: [Syslog.Option],
-    ssFacility :: Syslog.Facility
+    ssFilter :: LogFilter         -- ^ Log messages filter
+  , ssFormat :: LogFormat         -- ^ Log message format. Usually you do not want to put time here,
+                                  --   because syslog writes time to log by itself by default.
+  , ssIdent :: String             -- ^ Syslog source identifier
+  , ssOptions :: [Syslog.Option]  -- ^ Syslog options
+  , ssFacility :: Syslog.Facility -- ^ Syslog facility. It is usally User, if you are writing user-space
+                                  --   program.
   }
 
+-- | Default settings for syslog backend
 defaultSyslogSettings :: SyslogSettings
 defaultSyslogSettings = SyslogSettings defaultLogFilter defaultSyslogFormat "application" [] Syslog.User
 
+-- | Default log message format fof syslog backend:
+-- @[$level] $source: $message@
 defaultSyslogFormat :: LogFormat
 defaultSyslogFormat = "[$level] $source: $message"
 
@@ -92,6 +123,7 @@ instance IsLogBackend SyslogSettings where
                 "Notice"    -> Syslog.Notice
                 _ -> error $ "unknown log level: " ++ T.unpack level
 
+-- | Check if message level matches given filter.
 checkLogLevel :: LogFilter -> LogMessage -> Bool
 checkLogLevel fltr m =
     case lookup (bestMatch (lmSource m) (map fst fltr)) fltr of
