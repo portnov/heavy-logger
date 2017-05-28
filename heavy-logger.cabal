@@ -17,6 +17,9 @@ cabal-version:       >=1.10
 
 library
   exposed-modules:     System.Log.Heavy
+                       System.Log.Heavy.Types
+                       System.Log.Heavy.Format
+                       System.Log.Heavy.Backends
   -- other-modules:       
   -- other-extensions:    
   build-depends:       base >=4.8 && <5.0,
