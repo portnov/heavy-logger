@@ -20,6 +20,7 @@ import Control.Monad
 import Control.Monad.Trans (liftIO)
 import Control.Monad.Reader
 import Control.Monad.Logger (MonadLogger (..), LogLevel (..))
+import Control.Concurrent
 import Data.List (isPrefixOf)
 import qualified Data.Text as T
 import qualified Data.ByteString.Unsafe as BSU
@@ -122,6 +123,21 @@ instance IsLogBackend SyslogSettings where
                 "Critical"  -> Syslog.Critical
                 "Notice"    -> Syslog.Notice
                 _ -> error $ "unknown log level: " ++ T.unpack level
+
+-- | Logging backend which writes all messages to the @Chan@
+data ChanLoggerSettings = ChanLoggerSettings {
+       clFilter :: LogFilter      -- ^ Log messages filter
+     , clChan :: Chan LogMessage  -- ^ @Chan@ where write messages to
+     }
+
+instance IsLogBackend ChanLoggerSettings where
+  withLoggingB settings runner (LoggingT actions) = do
+      runReaderT actions logger
+    where
+      logger m = do
+        let fltr = clFilter settings
+        when (checkLogLevel fltr m) $ do
+          liftIO $ writeChan (clChan settings) m
 
 -- | Check if message level matches given filter.
 checkLogLevel :: LogFilter -> LogMessage -> Bool
