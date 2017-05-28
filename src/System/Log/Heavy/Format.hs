@@ -33,11 +33,11 @@ data FormatItem =
   | FString B.ByteString -- ^ Fixed string, e.g. some kind of separator
   deriving (Eq, Show)
 
-instance IsString FormatItem where
-  fromString str = FString $ fromString str
+-- instance IsString FormatItem where
+--   fromString str = FString $ fromString str
 
 -- | Log message format description
-type LogFormat = [FormatItem]
+newtype LogFormat = LogFormat [FormatItem]
 
 instance IsString LogFormat where
   fromString str = parseFormat' (fromString str)
@@ -48,7 +48,7 @@ defaultLogFormat :: LogFormat
 defaultLogFormat = parseFormat' "$time [$level] $source: $message\n"
 
 formatLogMessage :: LogFormat -> LogMessage -> FormattedTime -> LogStr
-formatLogMessage format m ftime = mconcat $ map go format
+formatLogMessage (LogFormat format) m ftime = mconcat $ map go format
   where
     go :: FormatItem -> LogStr
     go FLevel = toLogStr $ showLevel $ lmLevel m
@@ -79,7 +79,7 @@ parseFormat' formatstr =
     Left err -> error err
 
 pFormat :: Parser LogFormat
-pFormat = many1 pItem
+pFormat = LogFormat <$> many1 pItem
 
 pItem :: Parser FormatItem
 pItem = choice [
