@@ -1,6 +1,12 @@
 {-# LANGUAGE OverloadedStrings, TypeSynonymInstances, FlexibleInstances, ExistentialQuantification, TypeFamilies, GeneralizedNewtypeDeriving, StandaloneDeriving, MultiParamTypeClasses, UndecidableInstances #-}
 
-module System.Log.Heavy where
+module System.Log.Heavy
+  (
+    module System.Log.Heavy.Types,
+    module System.Log.Heavy.Format,
+    module System.Log.Heavy.Backends,
+    withLogging
+  ) where
 
 import Control.Monad.Trans
 
