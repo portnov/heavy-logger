@@ -1,9 +1,12 @@
-{-# LANGUAGE OverloadedStrings, TypeSynonymInstances, FlexibleInstances, ExistentialQuantification, TypeFamilies, GeneralizedNewtypeDeriving, StandaloneDeriving #-}
+{-# LANGUAGE OverloadedStrings, TypeSynonymInstances, FlexibleInstances, ExistentialQuantification, TypeFamilies, GeneralizedNewtypeDeriving, StandaloneDeriving, MultiParamTypeClasses, UndecidableInstances #-}
 
 module System.Log.Heavy where
 
 import Control.Applicative
 import Control.Monad.Reader
+import Control.Monad.Base
+import Control.Monad.Logger (MonadLogger (..), LogLevel (..))
+import Control.Monad.Trans.Control
 import Control.Exception
 import Data.String
 import Data.Monoid
@@ -11,19 +14,9 @@ import Data.List
 import Language.Haskell.TH
 import qualified Data.ByteString as B
 import qualified Data.ByteString.Unsafe as BSU
+import qualified Data.Text as T
 import System.Log.FastLogger as F
 import qualified System.Posix.Syslog as Syslog
-
-data LogLevel =
-    Emergency
-  | Alert
-  | Critical
-  | Error
-  | Warning
-  | Notice
-  | Info
-  | Debug
-  deriving (Eq, Show, Ord)
 
 type LogSource = [String]
 
@@ -66,12 +59,12 @@ formatLogMessage format m ftime = mconcat $ intersperse (toLogStr (" " :: B.Byte
 type LogFilter = [(LogSource, LogLevel)]
 
 defaultLogFilter :: LogFilter
-defaultLogFilter = [([], Info)]
+defaultLogFilter = [([], LevelInfo)]
 
 checkLogLevel :: LogFilter -> LogMessage -> Bool
 checkLogLevel fltr m = any fits fltr
   where
-    fits (src, level) = src `isPrefixOf` lmSource m && lmLevel m <= level
+    fits (src, level) = src `isPrefixOf` lmSource m && lmLevel m >= level
 
 class IsLogBackend b where
   withLoggingB :: (MonadIO m) => b -> (m a -> IO a) -> LoggingT m a -> m a
@@ -100,9 +93,25 @@ defFileSettings path = FastLoggerSettings defaultLogFilter defaultLogFormat (F.L
 newtype LoggingT m a = LoggingT {
     runLoggingT :: ReaderT Logger m a
   }
-  deriving (Functor, Applicative, Monad, MonadReader Logger)
+  deriving (Functor, Applicative, Monad, MonadReader Logger, MonadTrans)
 
 deriving instance MonadIO m => MonadIO (LoggingT m)
+
+instance MonadIO m => MonadBase IO (LoggingT m) where
+  liftBase = liftIO
+
+instance MonadTransControl LoggingT where
+    type StT LoggingT a = StT (ReaderT Logger) a
+    liftWith = defaultLiftWith LoggingT runLoggingT
+    restoreT = defaultRestoreT LoggingT
+
+instance (MonadBaseControl IO m, MonadIO m) => MonadBaseControl IO (LoggingT m) where
+    type StM (LoggingT m) a = ComposeSt LoggingT m a
+    liftBaseWith     = defaultLiftBaseWith
+    restoreM         = defaultRestoreM
+
+runLoggingTReader :: LoggingT m a -> Logger -> m a
+runLoggingTReader actions logger = runReaderT (runLoggingT actions) logger
 
 type Logger = LogMessage -> IO ()
 
@@ -160,12 +169,31 @@ instance IsLogBackend SyslogSettings where
                   Syslog.syslog (Just facility) (levelToPriority $ lmLevel m)
 
         levelToPriority :: LogLevel -> Syslog.Priority
-        levelToPriority Emergency = Syslog.Emergency
-        levelToPriority Alert = Syslog.Alert
-        levelToPriority Critical = Syslog.Critical
-        levelToPriority Error = Syslog.Error
-        levelToPriority Warning = Syslog.Warning
-        levelToPriority Notice = Syslog.Notice
-        levelToPriority Info = Syslog.Info
-        levelToPriority Debug = Syslog.Debug
+        levelToPriority LevelDebug = Syslog.Debug
+        levelToPriority LevelInfo  = Syslog.Info
+        levelToPriority LevelWarn  = Syslog.Warning
+        levelToPriority LevelError = Syslog.Error
+        levelToPriority (LevelOther level) =
+            case level of
+                "Emergency" -> Syslog.Emergency
+                "Alert"     -> Syslog.Alert
+                "Critical"  -> Syslog.Critical
+                "Notice"    -> Syslog.Notice
+                _ -> error $ "unknown log level: " ++ T.unpack level
+
+instance MonadIO m => MonadLogger (LoggingT m) where
+  monadLoggerLog loc src level msg =
+      logMessage $ LogMessage level src' loc (toLogStr msg)
+    where
+      src' = splitDots $ T.unpack src
+
+splitString       :: Char -> String -> [String]
+splitString _ ""  =  []
+splitString c s   =  let (l, s') = break (== c) s
+                 in  l : case s' of
+                           []      -> []
+                           (_:s'') -> splitString c s''
+
+splitDots :: String -> [String]
+splitDots = splitString '.'
 
