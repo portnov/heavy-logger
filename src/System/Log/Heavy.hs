@@ -44,7 +44,7 @@ instance IsString LogFormat where
   fromString str = [fromString str]
 
 defaultLogFormat :: LogFormat
-defaultLogFormat = [FTime, FLevel, FSource, FMessage]
+defaultLogFormat = [FTime, FLevel, FSource, FMessage, FString "\n"]
 
 formatLogMessage :: LogFormat -> LogMessage -> FormattedTime -> LogStr
 formatLogMessage format m ftime = mconcat $ intersperse (toLogStr (" " :: B.ByteString)) $ map go format
