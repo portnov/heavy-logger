@@ -13,7 +13,6 @@ selectBackend :: String -> LogBackend
 selectBackend "syslog" = LogBackend $ defaultSyslogSettings
 selectBackend "stderr" = LogBackend $ defStderrSettings
 selectBackend "stdout" = LogBackend $ defStdoutSettings
-selectBackend "test" = LogBackend $ defStderrSettings `AndAlso` defaultSyslogSettings
 selectBackend path = LogBackend $ defFileSettings path
 
 main :: IO ()
