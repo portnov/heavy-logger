@@ -76,7 +76,7 @@ data SyslogSettings = SyslogSettings {
     ssFilter :: LogFilter         -- ^ Log messages filter
   , ssFormat :: LogFormat         -- ^ Log message format. Usually you do not want to put time here,
                                   --   because syslog writes time to log by itself by default.
-  , ssIdent :: String             -- ^ Syslog source identifier
+  , ssIdent :: String             -- ^ Syslog source identifier. Usually the name of your program.
   , ssOptions :: [Syslog.Option]  -- ^ Syslog options
   , ssFacility :: Syslog.Facility -- ^ Syslog facility. It is usally User, if you are writing user-space
                                   --   program.
