@@ -30,6 +30,7 @@ data LogMessage = LogMessage {
 data FormatItem =
     FLevel
   | FSource
+  | FLocation
   | FTime
   | FMessage
   | FString B.ByteString
@@ -50,11 +51,18 @@ formatLogMessage :: LogFormat -> LogMessage -> FormattedTime -> LogStr
 formatLogMessage format m ftime = mconcat $ intersperse (toLogStr (" " :: B.ByteString)) $ map go format
   where
     go :: FormatItem -> LogStr
-    go FLevel = toLogStr $ show $ lmLevel m
+    go FLevel = toLogStr $ showLevel $ lmLevel m
     go FSource = toLogStr $ intercalate "." $ lmSource m
+    go FLocation = toLogStr $ show $ lmLocation m
     go FTime = toLogStr ftime
     go FMessage = lmString m
     go (FString s) = toLogStr s
+
+    showLevel LevelDebug = "debug"
+    showLevel LevelInfo = "info"
+    showLevel LevelWarn = "warning"
+    showLevel LevelError = "error"
+    showLevel (LevelOther x) = T.unpack x
 
 type LogFilter = [(LogSource, LogLevel)]
 
