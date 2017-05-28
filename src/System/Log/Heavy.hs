@@ -62,9 +62,19 @@ defaultLogFilter :: LogFilter
 defaultLogFilter = [([], LevelInfo)]
 
 checkLogLevel :: LogFilter -> LogMessage -> Bool
-checkLogLevel fltr m = any fits fltr
+checkLogLevel fltr m =
+    case lookup (bestMatch (lmSource m) (map fst fltr)) fltr of
+      Nothing -> False
+      Just level -> lmLevel m >= level
   where
-    fits (src, level) = src `isPrefixOf` lmSource m && lmLevel m >= level
+    bestMatch :: LogSource -> [LogSource] -> LogSource
+    bestMatch src list = go [] src list
+
+    go best src [] = best
+    go best src (x:xs)
+      | src == x = x
+      | x `isPrefixOf` src && length x > length best = go x src xs
+      | otherwise = go best src xs
 
 class IsLogBackend b where
   withLoggingB :: (MonadIO m) => b -> (m a -> IO a) -> LoggingT m a -> m a
