@@ -20,6 +20,7 @@ library
                        System.Log.Heavy.Types
                        System.Log.Heavy.Format
                        System.Log.Heavy.Backends
+                       System.Log.Heavy.Shortcuts
   -- other-modules:       
   -- other-extensions:    
   build-depends:       base >=4.8 && <5.0,

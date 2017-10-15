@@ -3,6 +3,8 @@
 -- | This is the main module of @heavy-logger@ package. You usually need to import only this module.
 -- All generally required modules are re-exported.
 --
+-- For simple usage cases, you may also want to import System.Log.Heavy.Shortcuts module.
+--
 -- Example of usage is:
 --
 -- @
@@ -24,9 +26,7 @@ module System.Log.Heavy
     -- * Reexports
     module System.Log.Heavy.Types,
     module System.Log.Heavy.Backends,
-    withLogging,
-    -- * Some shortcuts
-    errorMessage, infoMessage, debugMessage
+    withLogging
   ) where
 
 import Control.Monad.Trans
@@ -46,16 +46,4 @@ withLogging :: MonadIO m
             -> LoggingT m a  -- ^ Actions within @LoggingT@ monad.
             -> m a
 withLogging (LogBackend b) = withLoggingB b
-
--- | Message stub with Info severity.
-infoMessage :: F.VarContainer vars => TL.Text -> vars -> LogMessage
-infoMessage fmt vars = LogMessage LevelInfo [] undefined fmt vars
-
--- | Message stub with Debug severity.
-debugMessage :: F.VarContainer vars => TL.Text -> vars -> LogMessage
-debugMessage fmt vars = LogMessage LevelDebug [] undefined fmt vars
-
--- | Message stub with Error severity.
-errorMessage :: F.VarContainer vars => TL.Text -> vars -> LogMessage
-errorMessage fmt vars = LogMessage LevelError [] undefined fmt vars
 
