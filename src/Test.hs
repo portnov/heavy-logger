@@ -7,6 +7,7 @@ import System.Environment
 import System.IO
 import qualified System.Posix.Syslog as Syslog
 import System.Log.Heavy
+import System.Log.Heavy.Shortcuts
 import System.Log.FastLogger
 import Data.Text.Format.Heavy (Single (..))
 
@@ -25,7 +26,7 @@ main = do
       liftIO $ putStr "Your name? "
       liftIO $ hFlush stdout
       name <- liftIO $ getLine
-      logMessage $ infoMessage "name was {}" (Single name)
+      info "name was {}" (Single name)
       liftIO $ putStrLn $ "Hello, " ++ name
 
 
