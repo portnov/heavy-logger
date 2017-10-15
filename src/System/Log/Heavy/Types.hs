@@ -1,5 +1,6 @@
 {-# LANGUAGE OverloadedStrings, TypeSynonymInstances, FlexibleInstances, ExistentialQuantification, TypeFamilies, GeneralizedNewtypeDeriving, StandaloneDeriving, MultiParamTypeClasses, UndecidableInstances #-}
 
+-- | This module contains generic types definition, along with some utilities.
 module System.Log.Heavy.Types
   (
     LogSource, LogMessage (..), LogFilter,
@@ -37,6 +38,9 @@ data LogMessage = forall vars. F.VarContainer vars => LogMessage {
   }
 
 -- | Log messages filter by source and level.
+--
+-- Semantics under this is that @(source, severity)@ pair allows to write
+-- messages from @source@ of @severity@ (and all more important messages) to log.
 type LogFilter = [(LogSource, LogLevel)]
 
 -- | Default log messages filter. This says pass all messages

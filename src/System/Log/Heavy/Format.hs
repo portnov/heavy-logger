@@ -1,5 +1,19 @@
 {-# LANGUAGE OverloadedStrings, TypeSynonymInstances, FlexibleInstances, ExistentialQuantification, TypeFamilies, GeneralizedNewtypeDeriving, StandaloneDeriving, MultiParamTypeClasses, UndecidableInstances, RecordWildCards #-}
 
+-- | This module contains definitions for formatting log message to write it to output.
+--
+-- Log message format is defined by using @text-format-heavy@ syntax. Variables available are:
+--
+-- * level - message severity level
+--
+-- * source - message source (module name)
+--
+-- * location - location from where message was logged (line in source file)
+--
+-- * time - message time
+--
+-- * message - message string itself
+--
 module System.Log.Heavy.Format
   ( defaultLogFormat,
     formatLogMessage
@@ -24,10 +38,11 @@ import Prelude hiding (takeWhile)
 import System.Log.Heavy.Types
 
 -- | Default log message format.
--- Corresponds to: @$time [$level] $source: $message\n@
+-- Corresponds to: @{time} [{level}] {source}: {message}\\n@
 defaultLogFormat :: F.Format
 defaultLogFormat = PF.parseFormat' "{time} [{level}] {source}: {message}\n"
 
+-- | Format log message for output.
 formatLogMessage :: F.Format -> LogMessage -> FormattedTime -> LogStr
 formatLogMessage fmt (LogMessage {..}) ftime =
     toLogStr $ F.format fmt variables

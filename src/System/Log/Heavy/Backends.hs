@@ -36,6 +36,15 @@ import System.Log.Heavy.Format
 -- This module contains several implementation of logging backend.
 -- A backend is some kind of target, where your messages will go.
 -- Each backend has its own specific settings.
+--
+-- Backends provided are:
+--
+-- * Fast-logger backend. It allows to write messages to stdout, stderr or arbitrary file.
+--
+-- * Syslog backend.
+--
+-- * Chan backend.
+--
 
 -- | Settings of fast-logger backend. This mostly reflects settings of fast-logger itself.
 data FastLoggerSettings = FastLoggerSettings {
@@ -89,7 +98,7 @@ defaultSyslogSettings :: SyslogSettings
 defaultSyslogSettings = SyslogSettings defaultLogFilter defaultSyslogFormat "application" [] Syslog.User
 
 -- | Default log message format fof syslog backend:
--- @[$level] $source: $message@
+-- @[{level}] {source}: {message}@
 defaultSyslogFormat :: F.Format
 defaultSyslogFormat = "[{level}] {source}: {message}"
 
