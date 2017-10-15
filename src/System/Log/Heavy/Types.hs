@@ -32,8 +32,8 @@ data LogMessage = forall vars. F.VarContainer vars => LogMessage {
   , lmSource :: LogSource  -- ^ Log message source (module)
   , lmLocation :: Loc      -- ^ Log message source (exact location). You usually
                            --   will want to use TH quotes to fill this.
-  , lmFormatString :: TL.Text -- ^ Log message itself
-  , lmFormatVars :: vars
+  , lmFormatString :: TL.Text -- ^ Log message string format (in @Data.Text.Format.Heavy@ syntax)
+  , lmFormatVars :: vars   -- ^ Log message substitution variables. Use @()@ if you do not have variables.
   }
 
 -- | Log messages filter by source and level.
