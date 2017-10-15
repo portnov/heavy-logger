@@ -1,4 +1,4 @@
-{-# LANGUAGE OverloadedStrings, TypeSynonymInstances, FlexibleInstances, ExistentialQuantification, TypeFamilies, GeneralizedNewtypeDeriving, StandaloneDeriving, MultiParamTypeClasses, UndecidableInstances #-}
+{-# LANGUAGE OverloadedStrings, TypeSynonymInstances, FlexibleInstances, ExistentialQuantification, TypeFamilies, GeneralizedNewtypeDeriving, StandaloneDeriving, MultiParamTypeClasses, UndecidableInstances, RecordWildCards #-}
 
 module System.Log.Heavy.Format
   ( FormatItem (..),
@@ -18,7 +18,9 @@ import Data.Maybe
 import qualified Data.Text as T
 import qualified Data.ByteString as B
 import Data.Attoparsec.ByteString
-import System.Log.FastLogger as F
+import System.Log.FastLogger
+import qualified Data.Text.Format.Heavy as F
+import qualified Data.Text.Format.Heavy.Parse as PF
 import Prelude hiding (takeWhile)
 
 import System.Log.Heavy.Types
@@ -48,14 +50,16 @@ defaultLogFormat :: LogFormat
 defaultLogFormat = parseFormat' "$time [$level] $source: $message\n"
 
 formatLogMessage :: LogFormat -> LogMessage -> FormattedTime -> LogStr
-formatLogMessage (LogFormat format) m ftime = mconcat $ map go format
+formatLogMessage (LogFormat format) (LogMessage {..}) ftime = mconcat $ map go format
   where
     go :: FormatItem -> LogStr
-    go FLevel = toLogStr $ showLevel $ lmLevel m
-    go FSource = toLogStr $ intercalate "." $ lmSource m
-    go FLocation = toLogStr $ show $ lmLocation m
+    go FLevel = toLogStr $ showLevel lmLevel
+    go FSource = toLogStr $ intercalate "." lmSource
+    go FLocation = toLogStr $ show lmLocation
     go FTime = toLogStr ftime
-    go FMessage = lmString m
+    go FMessage =
+      let fmt = PF.parseFormat' lmFormatString
+      in  toLogStr $ F.format fmt lmFormatVars
     go (FString s) = toLogStr s
 
     showLevel LevelDebug = "debug"

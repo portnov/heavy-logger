@@ -6,10 +6,15 @@ module System.Log.Heavy
     module System.Log.Heavy.Types,
     module System.Log.Heavy.Format,
     module System.Log.Heavy.Backends,
-    withLogging
+    withLogging,
+    -- * Some shortcuts
+    errorMessage, infoMessage, debugMessage
   ) where
 
 import Control.Monad.Trans
+import Control.Monad.Logger (LogLevel (..))
+import qualified Data.Text.Lazy as TL
+import qualified Data.Text.Format.Heavy as F
 
 import System.Log.Heavy.Types
 import System.Log.Heavy.Format
@@ -24,4 +29,13 @@ withLogging :: MonadIO m
             -> LoggingT m a  -- ^ Actions within @LoggingT@ monad.
             -> m a
 withLogging (LogBackend b) = withLoggingB b
+
+infoMessage :: F.VarContainer vars => TL.Text -> vars -> LogMessage
+infoMessage fmt vars = LogMessage LevelInfo [] undefined fmt vars
+
+debugMessage :: F.VarContainer vars => TL.Text -> vars -> LogMessage
+debugMessage fmt vars = LogMessage LevelDebug [] undefined fmt vars
+
+errorMessage :: F.VarContainer vars => TL.Text -> vars -> LogMessage
+errorMessage fmt vars = LogMessage LevelError [] undefined fmt vars
 

@@ -7,7 +7,8 @@ import System.Environment
 import System.IO
 import qualified System.Posix.Syslog as Syslog
 import System.Log.Heavy
-import System.Log.FastLogger as F
+import System.Log.FastLogger
+import Data.Text.Format.Heavy (Single (..))
 
 selectBackend :: String -> LogBackend
 selectBackend "syslog" = LogBackend $ defaultSyslogSettings
@@ -24,7 +25,7 @@ main = do
       liftIO $ putStr "Your name? "
       liftIO $ hFlush stdout
       name <- liftIO $ getLine
-      logMessage (LogMessage LevelInfo [] undefined (toLogStr ("name was " :: String) <> toLogStr name))
+      logMessage $ infoMessage "name was {}" (Single name)
       liftIO $ putStrLn $ "Hello, " ++ name
 
 

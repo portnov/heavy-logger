@@ -17,19 +17,23 @@ import Control.Monad.Trans.Control
 import Data.String
 import Language.Haskell.TH
 import qualified Data.Text as T
-import System.Log.FastLogger as F
+import qualified Data.Text.Encoding as TE
+import qualified Data.Text.Lazy as TL
+import System.Log.FastLogger
+import qualified Data.Text.Format.Heavy as F
 
 -- | Log message source. This is usually a list of program module names,
 -- for example @[\"System\", \"Log\", \"Heavy\", \"Types\"]@.
 type LogSource = [String]
 
 -- | Log message structure
-data LogMessage = LogMessage {
+data LogMessage = forall vars. F.VarContainer vars => LogMessage {
     lmLevel :: LogLevel    -- ^ Log message level
   , lmSource :: LogSource  -- ^ Log message source (module)
   , lmLocation :: Loc      -- ^ Log message source (exact location). You usually
                            --   will want to use TH quotes to fill this.
-  , lmString :: LogStr     -- ^ Log message itself
+  , lmFormatString :: TL.Text -- ^ Log message itself
+  , lmFormatVars :: vars
   }
 
 -- | Log messages filter by source and level.
@@ -86,9 +90,12 @@ runLoggingT actions logger = runReaderT (runLoggingT_ actions) logger
 -- | Logging function
 type Logger = LogMessage -> IO ()
 
+textFromLogStr :: ToLogStr str => str -> TL.Text
+textFromLogStr str = TL.fromStrict $ TE.decodeUtf8 $ fromLogStr $ toLogStr str
+
 instance MonadIO m => MonadLogger (LoggingT m) where
   monadLoggerLog loc src level msg =
-      logMessage $ LogMessage level src' loc (toLogStr msg)
+      logMessage $ LogMessage level src' loc (textFromLogStr msg) ()
     where
       src' = splitDots $ T.unpack src
 
