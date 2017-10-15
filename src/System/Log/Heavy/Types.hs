@@ -99,6 +99,9 @@ instance MonadIO m => MonadLogger (LoggingT m) where
     where
       src' = splitDots $ T.unpack src
 
+instance F.Formatable LogStr where
+  formatVar fmt str = F.formatVar fmt $ fromLogStr str
+
 -- | Simple implementation of splitting string by character.
 splitString       :: Char -> String -> [String]
 splitString _ ""  =  []

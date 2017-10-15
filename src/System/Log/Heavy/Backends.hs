@@ -24,8 +24,9 @@ import Control.Concurrent
 import Data.List (isPrefixOf)
 import qualified Data.Text as T
 import qualified Data.ByteString.Unsafe as BSU
+import qualified Data.Text.Format.Heavy as F
 import qualified System.Posix.Syslog as Syslog
-import System.Log.FastLogger as F
+import System.Log.FastLogger as FL
 
 import System.Log.Heavy.Types
 import System.Log.Heavy.Format
@@ -39,23 +40,23 @@ import System.Log.Heavy.Format
 -- | Settings of fast-logger backend. This mostly reflects settings of fast-logger itself.
 data FastLoggerSettings = FastLoggerSettings {
     lsFilter :: LogFilter -- ^ Log messages filter
-  , lsFormat :: LogFormat -- ^ Log message format
-  , lsType :: F.LogType   -- ^ Fast-logger target settings
+  , lsFormat :: F.Format -- ^ Log message format
+  , lsType :: FL.LogType   -- ^ Fast-logger target settings
   }
 
 -- | Default settings for fast-logger stdout output
 defStdoutSettings :: FastLoggerSettings
-defStdoutSettings = FastLoggerSettings defaultLogFilter defaultLogFormat (F.LogStdout F.defaultBufSize)
+defStdoutSettings = FastLoggerSettings defaultLogFilter defaultLogFormat (FL.LogStdout FL.defaultBufSize)
 
 -- | Default settings for fast-logger stderr output
 defStderrSettings :: FastLoggerSettings
-defStderrSettings = FastLoggerSettings defaultLogFilter defaultLogFormat (F.LogStderr F.defaultBufSize)
+defStderrSettings = FastLoggerSettings defaultLogFilter defaultLogFormat (FL.LogStderr FL.defaultBufSize)
 
 -- | Default settings for fast-logger file output.
 -- This implies log rotation when log file size reaches 10Mb.
 defFileSettings :: FilePath -> FastLoggerSettings
-defFileSettings path = FastLoggerSettings defaultLogFilter defaultLogFormat (F.LogFile spec F.defaultBufSize)
-  where spec = F.FileLogSpec path (10*1024*1024) 3
+defFileSettings path = FastLoggerSettings defaultLogFilter defaultLogFormat (FL.LogFile spec FL.defaultBufSize)
+  where spec = FL.FileLogSpec path (10*1024*1024) 3
 
 instance IsLogBackend FastLoggerSettings where
     -- withLogging :: (MonadIO m) => FastLoggerSettings -> (m a -> IO a) -> LoggingT m a -> m a
@@ -75,7 +76,7 @@ instance IsLogBackend FastLoggerSettings where
 -- | Settings for syslog backend. This mostly reflects syslog API.
 data SyslogSettings = SyslogSettings {
     ssFilter :: LogFilter         -- ^ Log messages filter
-  , ssFormat :: LogFormat         -- ^ Log message format. Usually you do not want to put time here,
+  , ssFormat :: F.Format         -- ^ Log message format. Usually you do not want to put time here,
                                   --   because syslog writes time to log by itself by default.
   , ssIdent :: String             -- ^ Syslog source identifier. Usually the name of your program.
   , ssOptions :: [Syslog.Option]  -- ^ Syslog options
@@ -89,8 +90,8 @@ defaultSyslogSettings = SyslogSettings defaultLogFilter defaultSyslogFormat "app
 
 -- | Default log message format fof syslog backend:
 -- @[$level] $source: $message@
-defaultSyslogFormat :: LogFormat
-defaultSyslogFormat = "[$level] $source: $message"
+defaultSyslogFormat :: F.Format
+defaultSyslogFormat = "[{level}] {source}: {message}"
 
 instance IsLogBackend SyslogSettings where
     withLoggingB settings runner (LoggingT actions) = do
