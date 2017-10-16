@@ -1,4 +1,4 @@
-{-# LANGUAGE OverloadedStrings, TypeSynonymInstances, FlexibleInstances, ExistentialQuantification, TypeFamilies, GeneralizedNewtypeDeriving, StandaloneDeriving #-}
+{-# LANGUAGE OverloadedStrings, TypeSynonymInstances, FlexibleInstances, ExistentialQuantification, TypeFamilies, GeneralizedNewtypeDeriving, StandaloneDeriving, FlexibleContexts #-}
 
 import Control.Monad.Trans
 import Control.Monad.Reader
@@ -21,9 +21,13 @@ selectBackend path = LoggingSettings $ defFileSettings path
 main :: IO ()
 main = do
   [bstr] <- getArgs
-  let backend = selectBackend bstr
+  let settings = selectBackend bstr
+  runReaderT (main' settings) undefined
 
-  withLogging backend $ do
+
+-- main' :: IsLogBackend b => LoggingSettings -> ReaderT b IO ()
+main' settings = do
+  withLogging settings $ do
       liftIO $ putStr "Your name? "
       liftIO $ hFlush stdout
       name <- liftIO $ getLine
