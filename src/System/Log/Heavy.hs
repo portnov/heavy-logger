@@ -1,4 +1,4 @@
-{-# LANGUAGE OverloadedStrings, TypeSynonymInstances, FlexibleInstances, ExistentialQuantification, TypeFamilies, GeneralizedNewtypeDeriving, StandaloneDeriving, MultiParamTypeClasses, UndecidableInstances #-}
+{-# LANGUAGE OverloadedStrings, TypeSynonymInstances, FlexibleInstances, ExistentialQuantification, TypeFamilies, GeneralizedNewtypeDeriving, StandaloneDeriving, MultiParamTypeClasses, UndecidableInstances, FlexibleContexts, Rank2Types #-}
 
 -- | This is the main module of @heavy-logger@ package. You usually need to import only this module.
 -- All generally required modules are re-exported.
@@ -30,20 +30,18 @@ module System.Log.Heavy
   ) where
 
 import Control.Monad.Trans
+import Control.Monad.Trans.Control
 import Control.Monad.Logger (LogLevel (..))
+import Control.Exception.Lifted (bracket)
 import qualified Data.Text.Lazy as TL
 import qualified Data.Text.Format.Heavy as F
 
 import System.Log.Heavy.Types
 import System.Log.Heavy.Backends
 
--- | Run LoggingT monad within some kind of IO monad.
-withLogging :: MonadIO m
-            => LogBackend    -- ^ Logging backend settings
-            -> (m a -> IO a) -- ^ Runner to run @m@ within @IO@. 
-                             --   For example this may be @runReader@ or @evalState@.
-                             --   Use @id@ for case when @m@ is @IO@.
-            -> LoggingT m a  -- ^ Actions within @LoggingT@ monad.
+withLogging :: (MonadBaseControl IO m, MonadIO m)
+            => LoggingSettings
+            -> (forall b. IsLogBackend b => b -> m a)
             -> m a
-withLogging (LogBackend b) = withLoggingB b
+withLogging (LoggingSettings settings) actions = withLoggingB settings actions
 
