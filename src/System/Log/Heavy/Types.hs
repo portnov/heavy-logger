@@ -5,7 +5,7 @@ module System.Log.Heavy.Types
   (
     LogSource, LogMessage (..), LogFilter,
     IsLogBackend (..), LoggingSettings (..), Logger,
-    HasLogBackend (..), 
+    HasLogBackend (..),
     -- LoggingT (LoggingT), runLoggingT,
     defaultLogFilter,
     splitString, splitDots,
@@ -61,6 +61,9 @@ class IsLogBackend b where
 
 class (Monad mb, IsLogBackend b) => HasLogBackend mb b | mb -> b where
   getLogBackend :: mb b
+
+instance (Monad m, IsLogBackend b) => HasLogBackend (ReaderT b m) b where
+  getLogBackend = ask
 
 -- class (HasLogBackend b m) => HasLogger b m where
 --   getLogger :: m (Logger b)

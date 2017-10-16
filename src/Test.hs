@@ -1,6 +1,7 @@
 {-# LANGUAGE OverloadedStrings, TypeSynonymInstances, FlexibleInstances, ExistentialQuantification, TypeFamilies, GeneralizedNewtypeDeriving, StandaloneDeriving #-}
 
 import Control.Monad.Trans
+import Control.Monad.Reader
 import Control.Monad.Logger (LogLevel (..))
 import Data.Monoid
 import System.Environment
@@ -11,18 +12,18 @@ import System.Log.Heavy.Shortcuts
 import System.Log.FastLogger
 import Data.Text.Format.Heavy (Single (..))
 
-selectBackend :: String -> LogBackend
-selectBackend "syslog" = LogBackend $ defaultSyslogSettings
-selectBackend "stderr" = LogBackend $ defStderrSettings
-selectBackend "stdout" = LogBackend $ defStdoutSettings
-selectBackend path = LogBackend $ defFileSettings path
+selectBackend :: String -> LoggingSettings
+selectBackend "syslog" = LoggingSettings $ defaultSyslogSettings
+selectBackend "stderr" = LoggingSettings $ defStderrSettings
+selectBackend "stdout" = LoggingSettings $ defStdoutSettings
+selectBackend path = LoggingSettings $ defFileSettings path
 
 main :: IO ()
 main = do
   [bstr] <- getArgs
   let backend = selectBackend bstr
 
-  withLogging backend id $ do
+  withLogging backend $ do
       liftIO $ putStr "Your name? "
       liftIO $ hFlush stdout
       name <- liftIO $ getLine
