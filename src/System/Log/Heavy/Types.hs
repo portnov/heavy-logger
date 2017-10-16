@@ -1,11 +1,12 @@
-{-# LANGUAGE OverloadedStrings, TypeSynonymInstances, FlexibleInstances, ExistentialQuantification, TypeFamilies, GeneralizedNewtypeDeriving, StandaloneDeriving, MultiParamTypeClasses, UndecidableInstances #-}
+{-# LANGUAGE OverloadedStrings, TypeSynonymInstances, FlexibleInstances, ExistentialQuantification, TypeFamilies, GeneralizedNewtypeDeriving, StandaloneDeriving, MultiParamTypeClasses, UndecidableInstances, AllowAmbiguousTypes, ScopedTypeVariables #-}
 
 -- | This module contains generic types definition, along with some utilities.
 module System.Log.Heavy.Types
   (
     LogSource, LogMessage (..), LogFilter,
     IsLogBackend (..), LogBackend (..), Logger,
-    LoggingT (LoggingT), runLoggingT,
+    HasLogBackend (..), 
+    -- LoggingT (LoggingT), runLoggingT,
     defaultLogFilter,
     splitString, splitDots,
     logMessage
@@ -50,12 +51,22 @@ defaultLogFilter = [([], LevelInfo)]
 
 -- | Logging backend class.
 class IsLogBackend b where
+  makeLogger :: Logger b
   -- | Run LoggingT within some kind of IO monad
-  withLoggingB :: (MonadIO m)
-               => b             -- ^ Backend settings
-               -> (m a -> IO a) -- ^ Runner that allows to run this @m@ within @IO@
-               -> LoggingT m a  -- ^ Actions within @LoggingT@ monad
-               -> m a
+--   withLoggingB :: (MonadIO m)
+--                => b             -- ^ Backend settings
+--                -> (m a -> IO a) -- ^ Runner that allows to run this @m@ within @IO@
+--                -> LoggingT m a  -- ^ Actions within @LoggingT@ monad
+--                -> m a
+
+class (Monad m, IsLogBackend b) => HasLogBackend b m where
+  getLogBackend :: m b
+
+-- class (HasLogBackend b m) => HasLogger b m where
+--   getLogger :: m (Logger b)
+--   getLogger = do
+--     backend <- getLogBackend
+--     return $ makeLogger
 
 -- | A container for arbitrary logging backend.
 -- You usually will use this similar to:
@@ -67,39 +78,43 @@ class IsLogBackend b where
 data LogBackend = forall b. IsLogBackend b => LogBackend b
 
 -- | Logging monad transformer.
-newtype LoggingT m a = LoggingT {
-    runLoggingT_ :: ReaderT Logger m a
-  }
-  deriving (Functor, Applicative, Monad, MonadReader Logger, MonadTrans)
-
-deriving instance MonadIO m => MonadIO (LoggingT m)
-
-instance MonadIO m => MonadBase IO (LoggingT m) where
-  liftBase = liftIO
-
-instance MonadTransControl LoggingT where
-    type StT LoggingT a = StT (ReaderT Logger) a
-    liftWith = defaultLiftWith LoggingT runLoggingT_
-    restoreT = defaultRestoreT LoggingT
-
-instance (MonadBaseControl IO m, MonadIO m) => MonadBaseControl IO (LoggingT m) where
-    type StM (LoggingT m) a = ComposeSt LoggingT m a
-    liftBaseWith     = defaultLiftBaseWith
-    restoreM         = defaultRestoreM
-
--- | Run logging monad
-runLoggingT :: LoggingT m a -> Logger -> m a
-runLoggingT actions logger = runReaderT (runLoggingT_ actions) logger
+-- newtype LoggingT m a = LoggingT {
+--     runLoggingT_ :: ReaderT Logger m a
+--   }
+--   deriving (Functor, Applicative, Monad, MonadReader Logger, MonadTrans)
+-- 
+-- deriving instance MonadIO m => MonadIO (LoggingT m)
+-- 
+-- instance (Monad m, IsLogBackend backend) => HasLogBackend backend m where
+--   getLogger = ask
+-- 
+-- instance MonadIO m => MonadBase IO (LoggingT m) where
+--   liftBase = liftIO
+-- 
+-- instance MonadTransControl LoggingT where
+--     type StT LoggingT a = StT (ReaderT Logger) a
+--     liftWith = defaultLiftWith LoggingT runLoggingT_
+--     restoreT = defaultRestoreT LoggingT
+-- 
+-- instance (MonadBaseControl IO m, MonadIO m) => MonadBaseControl IO (LoggingT m) where
+--     type StM (LoggingT m) a = ComposeSt LoggingT m a
+--     liftBaseWith     = defaultLiftBaseWith
+--     restoreM         = defaultRestoreM
+-- 
+-- -- | Run logging monad
+-- runLoggingT :: LoggingT m a -> Logger -> m a
+-- runLoggingT actions logger = runReaderT (runLoggingT_ actions) logger
 
 -- | Logging function
-type Logger = LogMessage -> IO ()
+type Logger backend = backend -> LogMessage -> IO ()
 
 textFromLogStr :: ToLogStr str => str -> TL.Text
 textFromLogStr str = TL.fromStrict $ TE.decodeUtf8 $ fromLogStr $ toLogStr str
 
-instance MonadIO m => MonadLogger (LoggingT m) where
-  monadLoggerLog loc src level msg =
-      logMessage $ LogMessage level src' loc (textFromLogStr msg) ()
+instance (Monad m, MonadIO m, HasLogBackend b m) => MonadLogger m where
+  monadLoggerLog loc src level msg = do
+      backend <- getLogBackend :: m b
+      liftIO $ makeLogger backend $ LogMessage level src' loc (textFromLogStr msg) ()
     where
       src' = splitDots $ T.unpack src
 
@@ -119,8 +134,8 @@ splitDots :: String -> [String]
 splitDots = splitString '.'
 
 -- | Log a message
-logMessage :: (MonadIO m) => LogMessage -> LoggingT m ()
-logMessage m = do
-  logger <- ask
-  liftIO $ logger m
+logMessage :: forall b m. (HasLogBackend b m, MonadIO m) => LogMessage -> m ()
+logMessage msg = do
+  backend <- getLogBackend :: m b
+  liftIO $ makeLogger backend msg
 
