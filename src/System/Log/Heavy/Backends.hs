@@ -4,8 +4,8 @@ module System.Log.Heavy.Backends
   (
   -- $description
   -- * Backends
-  FastLoggerSettings (..),
-  SyslogSettings (..),
+  FastLoggerBackend (..),
+  SyslogBackend (..),
   -- * Default settings
   defStdoutSettings,
   defStderrSettings,
@@ -48,44 +48,41 @@ import System.Log.Heavy.Format
 -- * Chan backend.
 --
 
--- | Settings of fast-logger backend. This mostly reflects settings of fast-logger itself.
-data FastLoggerSettings = FastLoggerSettings {
-    lsFilter :: LogFilter -- ^ Log messages filter
-  , lsFormat :: F.Format -- ^ Log message format
-  , lsType :: FL.LogType   -- ^ Fast-logger target settings
-  }
-
 -- | Default settings for fast-logger stdout output
-defStdoutSettings :: FastLoggerSettings
+defStdoutSettings :: LogBackendSettings FastLoggerBackend
 defStdoutSettings = FastLoggerSettings defaultLogFilter defaultLogFormat (FL.LogStdout FL.defaultBufSize)
 
 -- | Default settings for fast-logger stderr output
-defStderrSettings :: FastLoggerSettings
+defStderrSettings :: LogBackendSettings FastLoggerBackend
 defStderrSettings = FastLoggerSettings defaultLogFilter defaultLogFormat (FL.LogStderr FL.defaultBufSize)
 
 -- | Default settings for fast-logger file output.
 -- This implies log rotation when log file size reaches 10Mb.
-defFileSettings :: FilePath -> FastLoggerSettings
+defFileSettings :: FilePath -> LogBackendSettings FastLoggerBackend
 defFileSettings path = FastLoggerSettings defaultLogFilter defaultLogFormat (FL.LogFile spec FL.defaultBufSize)
   where spec = FL.FileLogSpec path (10*1024*1024) 3
 
 data FastLoggerBackend = FastLoggerBackend {
-    flbSettings :: FastLoggerSettings,
+    flbSettings :: LogBackendSettings FastLoggerBackend,
     flbTimedLogger :: TimedFastLogger,
     flbCleanup :: IO ()
   }
 
-newFastLoggerBackend :: FastLoggerSettings -> IO FastLoggerBackend
-newFastLoggerBackend settings = do
-    tcache <- newTimeCache simpleTimeFormat'
-    (logger, cleanup) <- newTimedFastLogger tcache (lsType settings)
-    return $ FastLoggerBackend settings logger cleanup
-
-cleanupFastLoggerBackend :: FastLoggerBackend -> IO ()
-cleanupFastLoggerBackend b = flbCleanup b
-
 instance IsLogBackend FastLoggerBackend where
-    -- withLogging :: (MonadIO m) => FastLoggerSettings -> (m a -> IO a) -> LoggingT m a -> m a
+    -- | Settings of fast-logger backend. This mostly reflects settings of fast-logger itself.
+    data LogBackendSettings FastLoggerBackend = FastLoggerSettings {
+        lsFilter :: LogFilter -- ^ Log messages filter
+      , lsFormat :: F.Format -- ^ Log message format
+      , lsType :: FL.LogType   -- ^ Fast-logger target settings
+      }
+
+    initLogBackend settings = do
+        tcache <- newTimeCache simpleTimeFormat'
+        (logger, cleanup) <- newTimedFastLogger tcache (lsType settings)
+        return $ FastLoggerBackend settings logger cleanup
+
+    cleanupLogBackend b = do
+        flbCleanup b
 
     makeLogger backend msg = do
       let settings = flbSettings backend
@@ -95,19 +92,8 @@ instance IsLogBackend FastLoggerBackend where
       when (checkLogLevel fltr msg) $ do
         logger $ formatLogMessage format msg
 
--- | Settings for syslog backend. This mostly reflects syslog API.
-data SyslogSettings = SyslogSettings {
-    ssFilter :: LogFilter         -- ^ Log messages filter
-  , ssFormat :: F.Format         -- ^ Log message format. Usually you do not want to put time here,
-                                  --   because syslog writes time to log by itself by default.
-  , ssIdent :: String             -- ^ Syslog source identifier. Usually the name of your program.
-  , ssOptions :: [Syslog.Option]  -- ^ Syslog options
-  , ssFacility :: Syslog.Facility -- ^ Syslog facility. It is usally User, if you are writing user-space
-                                  --   program.
-  }
-
 -- | Default settings for syslog backend
-defaultSyslogSettings :: SyslogSettings
+defaultSyslogSettings :: LogBackendSettings SyslogBackend
 defaultSyslogSettings = SyslogSettings defaultLogFilter defaultSyslogFormat "application" [] Syslog.User
 
 -- | Default log message format fof syslog backend:
@@ -116,24 +102,33 @@ defaultSyslogFormat :: F.Format
 defaultSyslogFormat = "[{level}] {source}: {message}"
 
 data SyslogBackend = SyslogBackend {
-    sbSettings :: SyslogSettings,
+    sbSettings :: LogBackendSettings SyslogBackend,
     sbIdent :: CString,
     sbTimeCache :: IO FormattedTime
   }
 
-newSyslogBackend :: SyslogSettings -> IO SyslogBackend
-newSyslogBackend settings = do
-  ident <- newCString (ssIdent settings)
-  tcache <- newTimeCache simpleTimeFormat'
-  Syslog.openlog ident (ssOptions settings) (ssFacility settings)
-  return $ SyslogBackend settings ident tcache
-
-cleanupSyslogBackend :: SyslogBackend -> IO ()
-cleanupSyslogBackend backend = do
-    free $ sbIdent backend
-    Syslog.closelog
-
 instance IsLogBackend SyslogBackend where
+    -- | Settings for syslog backend. This mostly reflects syslog API.
+    data LogBackendSettings SyslogBackend = SyslogSettings {
+        ssFilter :: LogFilter         -- ^ Log messages filter
+      , ssFormat :: F.Format         -- ^ Log message format. Usually you do not want to put time here,
+                                      --   because syslog writes time to log by itself by default.
+      , ssIdent :: String             -- ^ Syslog source identifier. Usually the name of your program.
+      , ssOptions :: [Syslog.Option]  -- ^ Syslog options
+      , ssFacility :: Syslog.Facility -- ^ Syslog facility. It is usally User, if you are writing user-space
+                                      --   program.
+      }
+
+    initLogBackend settings = do
+        ident <- newCString (ssIdent settings)
+        tcache <- newTimeCache simpleTimeFormat'
+        Syslog.openlog ident (ssOptions settings) (ssFacility settings)
+        return $ SyslogBackend settings ident tcache
+
+    cleanupLogBackend backend = do
+        free $ sbIdent backend
+        Syslog.closelog
+
     makeLogger backend msg = do
         let settings = sbSettings backend
         let fltr = ssFilter settings

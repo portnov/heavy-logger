@@ -35,28 +35,28 @@ warnMessage fmt vars = LogMessage LevelWarn [] undefined fmt vars
 
 -- | Log debug message.
 -- Note: this message will not contain source information.
-debug :: forall b m vars. (F.VarContainer vars, MonadIO m, HasLogBackend b m) => TL.Text -> vars -> m ()
+debug :: forall b m vars. (F.VarContainer vars, MonadIO m, HasLogBackend m b) => TL.Text -> vars -> m ()
 debug fmt vars = do
   backend <- getLogBackend :: m b
   liftIO $ makeLogger backend $ debugMessage fmt vars
 
 -- | Log info message.
 -- Note: this message will not contain source information.
-info :: forall b m vars. (F.VarContainer vars, MonadIO m, HasLogBackend b m) => TL.Text -> vars -> m ()
+info :: forall b m vars. (F.VarContainer vars, MonadIO m, HasLogBackend m b) => TL.Text -> vars -> m ()
 info fmt vars = do
   backend <- getLogBackend :: m b
   liftIO $ makeLogger backend $ infoMessage fmt vars
 
 -- | Log error message.
 -- Note: this message will not contain source information.
-reportError :: forall b m vars. (F.VarContainer vars, MonadIO m, HasLogBackend b m) => TL.Text -> vars -> m ()
+reportError :: forall b m vars. (F.VarContainer vars, MonadIO m, HasLogBackend m b) => TL.Text -> vars -> m ()
 reportError fmt vars = do
   backend <- getLogBackend :: m b
   liftIO $ makeLogger backend $ errorMessage fmt vars
 
 -- | Log warning message.
 -- Note: this message will not contain source information.
-warning :: forall b m vars. (F.VarContainer vars, MonadIO m, HasLogBackend b m) => TL.Text -> vars -> m ()
+warning :: forall b m vars. (F.VarContainer vars, MonadIO m, HasLogBackend m b) => TL.Text -> vars -> m ()
 warning fmt vars = do
   backend <- getLogBackend :: m b
   liftIO $ makeLogger backend $ warnMessage fmt vars
