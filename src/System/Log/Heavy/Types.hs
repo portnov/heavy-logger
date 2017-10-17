@@ -72,7 +72,8 @@ class IsLogBackend b where
             (actions)
 
 -- | Constraint for monads in which it is possible to obtain logging backend.
-type HasLogBackend b m = (IsLogBackend b, MonadReader b m)
+class IsLogBackend b => HasLogBackend b m where
+  getLogBackend :: m b
 
 -- | A container for arbitrary logging backend.
 -- You usually will use this similar to:
@@ -123,12 +124,18 @@ type SpecializedLogger = LogMessage -> IO ()
 -- 
 --   applyBackend :: IsLogBackend backend => backend -> m a -> m a
 
-type HasLogger m = (Monad m, MonadReader SpecializedLogger m)
+class Monad m => HasLogger m where
+  getLogger :: m SpecializedLogger
+  localLogger :: SpecializedLogger -> m a -> m a
+
+instance (Monad m, MonadReader SpecializedLogger m) => HasLogger m where
+  getLogger = ask
+  localLogger l = local (const l)
 
 applyBackend :: (IsLogBackend b, HasLogger m) => b -> m a -> m a
 applyBackend b actions = do
   let logger = makeLogger b
-  local (const logger) actions
+  localLogger logger actions
 
 -- instance (Monad m, MonadIO m, HasLogBackend b m) => HasLogger b m where
 --   getLogger = do
@@ -140,10 +147,10 @@ applyBackend b actions = do
 textFromLogStr :: ToLogStr str => str -> TL.Text
 textFromLogStr str = TL.fromStrict $ TE.decodeUtf8 $ fromLogStr $ toLogStr str
 
-instance (Monad m, MonadIO m, IsLogBackend b, MonadReader b m) => MonadLogger m where
+instance (Monad m, MonadIO m, HasLogger m) => MonadLogger m where
   monadLoggerLog loc src level msg = do
-      backend <- ask
-      liftIO $ makeLogger backend $ LogMessage level src' loc (textFromLogStr msg) ()
+      logger <- getLogger
+      liftIO $ logger $ LogMessage level src' loc (textFromLogStr msg) ()
     where
       src' = splitDots $ T.unpack src
 
@@ -165,6 +172,6 @@ splitDots = splitString '.'
 -- | Log a message
 logMessage :: forall m. (HasLogger m, MonadIO m) => LogMessage -> m ()
 logMessage msg = do
-  logger <- ask
+  logger <- getLogger
   liftIO $ logger msg
 
