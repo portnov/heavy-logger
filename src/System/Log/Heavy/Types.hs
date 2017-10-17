@@ -8,7 +8,7 @@ module System.Log.Heavy.Types
     -- HasLogBackend (..),
     SpecializedLogger, HasLogger (..),
     applyBackend,
-    -- LoggingT (LoggingT), runLoggingT,
+    LoggingT (LoggingT), runLoggingT,
     defaultLogFilter,
     splitString, splitDots,
     logMessage
@@ -85,32 +85,32 @@ class IsLogBackend b => HasLogBackend b m where
 data LoggingSettings = forall b. IsLogBackend b => LoggingSettings (LogBackendSettings b)
 
 -- | Logging monad transformer.
--- newtype LoggingT m a = LoggingT {
---     runLoggingT_ :: ReaderT Logger m a
---   }
---   deriving (Functor, Applicative, Monad, MonadReader Logger, MonadTrans)
--- 
--- deriving instance MonadIO m => MonadIO (LoggingT m)
--- 
+newtype LoggingT m a = LoggingT {
+    runLoggingT_ :: ReaderT SpecializedLogger m a
+  }
+  deriving (Functor, Applicative, Monad, MonadReader SpecializedLogger, MonadTrans)
+
+deriving instance MonadIO m => MonadIO (LoggingT m)
+
 -- instance (Monad m, IsLogBackend backend) => HasLogBackend backend m where
---   getLogger = ask
--- 
--- instance MonadIO m => MonadBase IO (LoggingT m) where
---   liftBase = liftIO
--- 
--- instance MonadTransControl LoggingT where
---     type StT LoggingT a = StT (ReaderT Logger) a
---     liftWith = defaultLiftWith LoggingT runLoggingT_
---     restoreT = defaultRestoreT LoggingT
--- 
--- instance (MonadBaseControl IO m, MonadIO m) => MonadBaseControl IO (LoggingT m) where
---     type StM (LoggingT m) a = ComposeSt LoggingT m a
---     liftBaseWith     = defaultLiftBaseWith
---     restoreM         = defaultRestoreM
--- 
--- -- | Run logging monad
--- runLoggingT :: LoggingT m a -> Logger -> m a
--- runLoggingT actions logger = runReaderT (runLoggingT_ actions) logger
+--   getLogBackend = ask
+
+instance MonadIO m => MonadBase IO (LoggingT m) where
+  liftBase = liftIO
+
+instance MonadTransControl LoggingT where
+    type StT LoggingT a = StT (ReaderT SpecializedLogger) a
+    liftWith = defaultLiftWith LoggingT runLoggingT_
+    restoreT = defaultRestoreT LoggingT
+
+instance (MonadBaseControl IO m, MonadIO m) => MonadBaseControl IO (LoggingT m) where
+    type StM (LoggingT m) a = ComposeSt LoggingT m a
+    liftBaseWith     = defaultLiftBaseWith
+    restoreM         = defaultRestoreM
+
+-- | Run logging monad
+runLoggingT :: LoggingT m a -> SpecializedLogger -> m a
+runLoggingT actions logger = runReaderT (runLoggingT_ actions) logger
 
 -- | Logging function
 type Logger backend = backend -> LogMessage -> IO ()
