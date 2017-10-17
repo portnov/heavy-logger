@@ -2,9 +2,9 @@
 
 -- | This module contains generic types definition, along with some utilities.
 module System.Log.Heavy.Types
-  (
+  {-(
     LogSource, LogMessage (..), LogFilter,
-    IsLogBackend (..), LoggingSettings (..), Logger,
+    IsLogBackend (..), LogBackendSettings (..), LoggingSettings (..), Logger,
     -- HasLogBackend (..),
     SpecializedLogger, HasLogger (..),
     applyBackend,
@@ -12,7 +12,7 @@ module System.Log.Heavy.Types
     defaultLogFilter,
     splitString, splitDots,
     logMessage
-  ) where
+  )-} where
 
 import Control.Monad.Reader
 import Control.Monad.Logger (MonadLogger (..), LogLevel (..))

@@ -4,8 +4,9 @@ module System.Log.Heavy.Backends
   (
   -- $description
   -- * Backends
-  FastLoggerBackend (..),
-  SyslogBackend (..),
+  FastLoggerBackend,
+  SyslogBackend,
+  LogBackendSettings (..),
   -- * Default settings
   defStdoutSettings,
   defStderrSettings,
