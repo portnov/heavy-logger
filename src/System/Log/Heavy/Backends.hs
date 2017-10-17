@@ -6,6 +6,7 @@ module System.Log.Heavy.Backends
   -- * Backends
   FastLoggerBackend,
   SyslogBackend,
+  ChanLoggerBackend,
   LogBackendSettings (..),
   -- * Default settings
   defStdoutSettings,
@@ -157,12 +158,18 @@ instance IsLogBackend SyslogBackend where
                 _ -> error $ "unknown log level: " ++ T.unpack level
 
 -- | Logging backend which writes all messages to the @Chan@
-data ChanLoggerSettings = ChanLoggerSettings {
+data ChanLoggerBackend = ChanLoggerBackend {
        clFilter :: LogFilter      -- ^ Log messages filter
      , clChan :: Chan LogMessage  -- ^ @Chan@ where write messages to
      }
 
-instance IsLogBackend ChanLoggerSettings where
+instance IsLogBackend ChanLoggerBackend where
+  data LogBackendSettings ChanLoggerBackend = ChanLoggerSettings ChanLoggerBackend
+
+  initLogBackend (ChanLoggerSettings backend) = return backend 
+
+  cleanupLogBackend _ = return ()
+
   makeLogger settings msg = do
     let fltr = clFilter settings
     when (checkLogLevel fltr msg) $ do
