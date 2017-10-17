@@ -5,8 +5,9 @@ module System.Log.Heavy.Types
   (
     LogSource, LogMessage (..), LogFilter,
     IsLogBackend (..), LoggingSettings (..), Logger,
-    HasLogBackend (..),
+    -- HasLogBackend (..),
     SpecializedLogger, HasLogger (..),
+    applyBackend,
     -- LoggingT (LoggingT), runLoggingT,
     defaultLogFilter,
     splitString, splitDots,
@@ -117,17 +118,24 @@ type SpecializedLogger = LogMessage -> IO ()
 
 -- data AnyLogger = forall backend. IsLogBackend backend => AnyLogger (Logger backend)
 
-class (Monad m, IsLogBackend backend) => HasLogger backend m where
-  getLogger :: m SpecializedLogger
+-- class (Monad m, IsLogBackend backend) => HasLogger m where
+--   getLogger :: m SpecializedLogger
+-- 
+--   applyBackend :: IsLogBackend backend => backend -> m a -> m a
 
-  applyBackend :: backend -> m a -> m a
+type HasLogger m = (Monad m, MonadReader SpecializedLogger m)
 
-instance (Monad m, MonadIO m, HasLogBackend b m) => HasLogger b m where
-  getLogger = do
-    backend <- ask
-    return $ (makeLogger :: Logger b) backend
+applyBackend :: (IsLogBackend b, HasLogger m) => b -> m a -> m a
+applyBackend b actions = do
+  let logger = makeLogger b
+  local (const logger) actions
 
-  applyBackend b actions = local (const b) actions
+-- instance (Monad m, MonadIO m, HasLogBackend b m) => HasLogger b m where
+--   getLogger = do
+--     backend <- ask
+--     return $ (makeLogger :: Logger b) backend
+-- 
+--   applyBackend b actions = local (const b) actions
 
 textFromLogStr :: ToLogStr str => str -> TL.Text
 textFromLogStr str = TL.fromStrict $ TE.decodeUtf8 $ fromLogStr $ toLogStr str
@@ -155,8 +163,8 @@ splitDots :: String -> [String]
 splitDots = splitString '.'
 
 -- | Log a message
-logMessage :: forall b m. (IsLogBackend b, MonadReader b m, MonadIO m) => LogMessage -> m ()
+logMessage :: forall m. (HasLogger m, MonadIO m) => LogMessage -> m ()
 logMessage msg = do
-  backend <- ask
-  liftIO $ makeLogger backend msg
+  logger <- ask
+  liftIO $ logger msg
 
