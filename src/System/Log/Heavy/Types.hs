@@ -1,4 +1,4 @@
-{-# LANGUAGE OverloadedStrings, TypeSynonymInstances, FlexibleInstances, ExistentialQuantification, TypeFamilies, GeneralizedNewtypeDeriving, StandaloneDeriving, MultiParamTypeClasses, UndecidableInstances, AllowAmbiguousTypes, ScopedTypeVariables, FunctionalDependencies, FlexibleContexts #-}
+{-# LANGUAGE OverloadedStrings, TypeSynonymInstances, FlexibleInstances, ExistentialQuantification, TypeFamilies, GeneralizedNewtypeDeriving, StandaloneDeriving, MultiParamTypeClasses, UndecidableInstances, AllowAmbiguousTypes, ScopedTypeVariables, FunctionalDependencies, FlexibleContexts, ConstraintKinds #-}
 
 -- | This module contains generic types definition, along with some utilities.
 module System.Log.Heavy.Types
@@ -69,24 +69,15 @@ class IsLogBackend b where
             (liftIO . cleanupLogBackend)
             (actions)
 
-class (Monad mb, IsLogBackend b) => HasLogBackend mb b | mb -> b where
-  getLogBackend :: mb b
-
-instance (Monad m, IsLogBackend b) => HasLogBackend (ReaderT b m) b where
-  getLogBackend = ask
-
--- class (HasLogBackend b m) => HasLogger b m where
---   getLogger :: m (Logger b)
---   getLogger = do
---     backend <- getLogBackend
---     return $ makeLogger
+-- | Constraint for monads in which it is possible to obtain logging backend.
+type HasLogBackend b m = (IsLogBackend b, MonadReader b m)
 
 -- | A container for arbitrary logging backend.
 -- You usually will use this similar to:
 --
 -- @
---  getLoggingSettings :: String -> LogBackend
---  getLoggingSettings "syslog" = LogBackend defaultsyslogsettings
+--  getLoggingSettings :: String -> LoggingSettings
+--  getLoggingSettings "syslog" = LoggingSettings defaultsyslogsettings
 -- @
 data LoggingSettings = forall b. IsLogBackend b => LoggingSettings (LogBackendSettings b)
 
@@ -124,9 +115,9 @@ type Logger backend = backend -> LogMessage -> IO ()
 textFromLogStr :: ToLogStr str => str -> TL.Text
 textFromLogStr str = TL.fromStrict $ TE.decodeUtf8 $ fromLogStr $ toLogStr str
 
-instance (Monad m, MonadIO m, HasLogBackend m b) => MonadLogger m where
+instance (Monad m, MonadIO m, IsLogBackend b, MonadReader b m) => MonadLogger m where
   monadLoggerLog loc src level msg = do
-      backend <- getLogBackend -- :: m b
+      backend <- ask
       liftIO $ makeLogger backend $ LogMessage level src' loc (textFromLogStr msg) ()
     where
       src' = splitDots $ T.unpack src
@@ -147,8 +138,8 @@ splitDots :: String -> [String]
 splitDots = splitString '.'
 
 -- | Log a message
-logMessage :: forall b m. (HasLogBackend m b, MonadIO m) => LogMessage -> m ()
+logMessage :: forall b m. (IsLogBackend b, MonadReader b m, MonadIO m) => LogMessage -> m ()
 logMessage msg = do
-  backend <- getLogBackend -- :: m b
+  backend <- ask
   liftIO $ makeLogger backend msg
 

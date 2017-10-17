@@ -45,3 +45,7 @@ withLogging :: (MonadBaseControl IO m, MonadIO m)
             -> m a
 withLogging (LoggingSettings settings) actions = withLoggingB settings actions
 
+-- withLoggingReader :: (MonadBaseControl IO m, MonadIO m, MonadReader b )
+--                   => LoggingSettings
+--                   -> (fo
+
