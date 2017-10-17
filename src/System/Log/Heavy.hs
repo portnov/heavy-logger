@@ -26,7 +26,7 @@ module System.Log.Heavy
     -- * Reexports
     module System.Log.Heavy.Types,
     module System.Log.Heavy.Backends,
-    withLogging, withLoggingF
+    withLogging, withLoggingF, withLoggingT
   ) where
 
 import Control.Monad.Trans
@@ -54,7 +54,12 @@ withLogging (LoggingSettings settings) actions =
             (liftIO . cleanupLogBackend)
             (\b -> applyBackend b actions)
 
--- withLoggingReader :: (MonadBaseControl IO m, MonadIO m, MonadReader b )
---                   => LoggingSettings
---                   -> (fo
+withLoggingT :: (MonadBaseControl IO m, MonadIO m)
+                  => LoggingSettings
+                  -> LoggingT m a
+                  -> m a
+withLoggingT (LoggingSettings settings) actions =
+  withLoggingB settings $ \backend ->
+      let logger = makeLogger backend
+      in  runLoggingT actions logger
 
