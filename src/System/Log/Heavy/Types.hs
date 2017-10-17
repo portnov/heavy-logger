@@ -1,11 +1,13 @@
-{-# LANGUAGE OverloadedStrings, TypeSynonymInstances, FlexibleInstances, ExistentialQuantification, TypeFamilies, GeneralizedNewtypeDeriving, StandaloneDeriving, MultiParamTypeClasses, UndecidableInstances, AllowAmbiguousTypes, ScopedTypeVariables, FunctionalDependencies, FlexibleContexts #-}
+{-# LANGUAGE OverloadedStrings, TypeSynonymInstances, FlexibleInstances, ExistentialQuantification, TypeFamilies, GeneralizedNewtypeDeriving, StandaloneDeriving, MultiParamTypeClasses, UndecidableInstances, AllowAmbiguousTypes, ScopedTypeVariables, FunctionalDependencies, FlexibleContexts, ConstraintKinds #-}
 
 -- | This module contains generic types definition, along with some utilities.
 module System.Log.Heavy.Types
   (
     LogSource, LogMessage (..), LogFilter,
     IsLogBackend (..), LoggingSettings (..), Logger,
-    HasLogBackend (..),
+    -- HasLogBackend (..),
+    SpecializedLogger, HasLogger (..),
+    applyBackend,
     -- LoggingT (LoggingT), runLoggingT,
     defaultLogFilter,
     splitString, splitDots,
@@ -69,24 +71,16 @@ class IsLogBackend b where
             (liftIO . cleanupLogBackend)
             (actions)
 
-class (Monad mb, IsLogBackend b) => HasLogBackend mb b | mb -> b where
-  getLogBackend :: mb b
-
-instance (Monad m, IsLogBackend b) => HasLogBackend (ReaderT b m) b where
-  getLogBackend = ask
-
--- class (HasLogBackend b m) => HasLogger b m where
---   getLogger :: m (Logger b)
---   getLogger = do
---     backend <- getLogBackend
---     return $ makeLogger
+-- | Constraint for monads in which it is possible to obtain logging backend.
+class IsLogBackend b => HasLogBackend b m where
+  getLogBackend :: m b
 
 -- | A container for arbitrary logging backend.
 -- You usually will use this similar to:
 --
 -- @
---  getLoggingSettings :: String -> LogBackend
---  getLoggingSettings "syslog" = LogBackend defaultsyslogsettings
+--  getLoggingSettings :: String -> LoggingSettings
+--  getLoggingSettings "syslog" = LoggingSettings defaultsyslogsettings
 -- @
 data LoggingSettings = forall b. IsLogBackend b => LoggingSettings (LogBackendSettings b)
 
@@ -121,13 +115,42 @@ data LoggingSettings = forall b. IsLogBackend b => LoggingSettings (LogBackendSe
 -- | Logging function
 type Logger backend = backend -> LogMessage -> IO ()
 
+type SpecializedLogger = LogMessage -> IO ()
+
+-- data AnyLogger = forall backend. IsLogBackend backend => AnyLogger (Logger backend)
+
+-- class (Monad m, IsLogBackend backend) => HasLogger m where
+--   getLogger :: m SpecializedLogger
+-- 
+--   applyBackend :: IsLogBackend backend => backend -> m a -> m a
+
+class Monad m => HasLogger m where
+  getLogger :: m SpecializedLogger
+  localLogger :: SpecializedLogger -> m a -> m a
+
+instance (Monad m, MonadReader SpecializedLogger m) => HasLogger m where
+  getLogger = ask
+  localLogger l = local (const l)
+
+applyBackend :: (IsLogBackend b, HasLogger m) => b -> m a -> m a
+applyBackend b actions = do
+  let logger = makeLogger b
+  localLogger logger actions
+
+-- instance (Monad m, MonadIO m, HasLogBackend b m) => HasLogger b m where
+--   getLogger = do
+--     backend <- ask
+--     return $ (makeLogger :: Logger b) backend
+-- 
+--   applyBackend b actions = local (const b) actions
+
 textFromLogStr :: ToLogStr str => str -> TL.Text
 textFromLogStr str = TL.fromStrict $ TE.decodeUtf8 $ fromLogStr $ toLogStr str
 
-instance (Monad m, MonadIO m, HasLogBackend m b) => MonadLogger m where
+instance (Monad m, MonadIO m, HasLogger m) => MonadLogger m where
   monadLoggerLog loc src level msg = do
-      backend <- getLogBackend -- :: m b
-      liftIO $ makeLogger backend $ LogMessage level src' loc (textFromLogStr msg) ()
+      logger <- getLogger
+      liftIO $ logger $ LogMessage level src' loc (textFromLogStr msg) ()
     where
       src' = splitDots $ T.unpack src
 
@@ -147,8 +170,8 @@ splitDots :: String -> [String]
 splitDots = splitString '.'
 
 -- | Log a message
-logMessage :: forall b m. (HasLogBackend m b, MonadIO m) => LogMessage -> m ()
+logMessage :: forall m. (HasLogger m, MonadIO m) => LogMessage -> m ()
 logMessage msg = do
-  backend <- getLogBackend -- :: m b
-  liftIO $ makeLogger backend msg
+  logger <- getLogger
+  liftIO $ logger msg
 

@@ -1,4 +1,4 @@
-{-# LANGUAGE OverloadedStrings, TypeSynonymInstances, FlexibleInstances, ExistentialQuantification, TypeFamilies, GeneralizedNewtypeDeriving, StandaloneDeriving, MultiParamTypeClasses, UndecidableInstances, ScopedTypeVariables, AllowAmbiguousTypes #-}
+{-# LANGUAGE OverloadedStrings, TypeSynonymInstances, FlexibleInstances, ExistentialQuantification, TypeFamilies, GeneralizedNewtypeDeriving, StandaloneDeriving, MultiParamTypeClasses, UndecidableInstances, ScopedTypeVariables, AllowAmbiguousTypes, FlexibleContexts #-}
 
 -- | This module contains some shortcut functions that can be of use in simple usage cases.
 module System.Log.Heavy.Shortcuts
@@ -10,6 +10,7 @@ module System.Log.Heavy.Shortcuts
   ) where
 
 import Control.Monad.Trans
+import Control.Monad.Reader
 import Control.Monad.Logger (LogLevel (..))
 import qualified Data.Text.Lazy as TL
 import qualified Data.Text.Format.Heavy as F
@@ -35,29 +36,21 @@ warnMessage fmt vars = LogMessage LevelWarn [] undefined fmt vars
 
 -- | Log debug message.
 -- Note: this message will not contain source information.
-debug :: forall b m vars. (F.VarContainer vars, MonadIO m, HasLogBackend m b) => TL.Text -> vars -> m ()
-debug fmt vars = do
-  backend <- getLogBackend :: m b
-  liftIO $ makeLogger backend $ debugMessage fmt vars
+debug :: forall m vars. (F.VarContainer vars, MonadIO m, HasLogger m) => TL.Text -> vars -> m ()
+debug fmt vars = logMessage $ debugMessage fmt vars
 
 -- | Log info message.
 -- Note: this message will not contain source information.
-info :: forall b m vars. (F.VarContainer vars, MonadIO m, HasLogBackend m b) => TL.Text -> vars -> m ()
-info fmt vars = do
-  backend <- getLogBackend :: m b
-  liftIO $ makeLogger backend $ infoMessage fmt vars
+info :: forall m vars. (F.VarContainer vars, MonadIO m, HasLogger m) => TL.Text -> vars -> m ()
+info fmt vars = logMessage $ infoMessage fmt vars
 
 -- | Log error message.
 -- Note: this message will not contain source information.
-reportError :: forall b m vars. (F.VarContainer vars, MonadIO m, HasLogBackend m b) => TL.Text -> vars -> m ()
-reportError fmt vars = do
-  backend <- getLogBackend :: m b
-  liftIO $ makeLogger backend $ errorMessage fmt vars
+reportError :: forall m vars. (F.VarContainer vars, MonadIO m, HasLogger m) => TL.Text -> vars -> m ()
+reportError fmt vars = logMessage $ errorMessage fmt vars
 
 -- | Log warning message.
 -- Note: this message will not contain source information.
-warning :: forall b m vars. (F.VarContainer vars, MonadIO m, HasLogBackend m b) => TL.Text -> vars -> m ()
-warning fmt vars = do
-  backend <- getLogBackend :: m b
-  liftIO $ makeLogger backend $ warnMessage fmt vars
+warning :: forall m vars. (F.VarContainer vars, MonadIO m, HasLogger m) => TL.Text -> vars -> m ()
+warning fmt vars = logMessage $ warnMessage fmt vars
 
