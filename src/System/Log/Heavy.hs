@@ -45,6 +45,15 @@ withLogging :: (MonadBaseControl IO m, MonadIO m)
             -> m a
 withLogging (LoggingSettings settings) actions = withLoggingB settings actions
 
+-- withLogging' :: (MonadBaseControl IO m, MonadIO m, HasAnyLogger m)
+--             => LoggingSettings
+--             -> m a
+--             -> m a
+-- withLogging (LoggingSettings settings) actions = 
+--     bracket (liftIO $ initLogBackend settings)
+--             (liftIO . cleanupLogBackend)
+--             (const actions)
+
 -- withLoggingReader :: (MonadBaseControl IO m, MonadIO m, MonadReader b )
 --                   => LoggingSettings
 --                   -> (fo

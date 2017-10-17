@@ -6,7 +6,7 @@ module System.Log.Heavy.Types
     LogSource, LogMessage (..), LogFilter,
     IsLogBackend (..), LoggingSettings (..), Logger,
     HasLogBackend (..),
-    SpecializedLogger, HasAnyLogger (..),
+    SpecializedLogger, HasLogger (..),
     -- LoggingT (LoggingT), runLoggingT,
     defaultLogFilter,
     splitString, splitDots,
@@ -117,13 +117,17 @@ type SpecializedLogger = LogMessage -> IO ()
 
 -- data AnyLogger = forall backend. IsLogBackend backend => AnyLogger (Logger backend)
 
-class Monad m => HasAnyLogger m where
+class (Monad m, IsLogBackend backend) => HasLogger backend m where
   getLogger :: m SpecializedLogger
 
-instance (Monad m, MonadIO m, HasLogBackend b m) => HasAnyLogger m where
+  applyBackend :: backend -> m a -> m a
+
+instance (Monad m, MonadIO m, HasLogBackend b m) => HasLogger b m where
   getLogger = do
     backend <- ask
     return $ (makeLogger :: Logger b) backend
+
+  applyBackend b actions = local (const b) actions
 
 textFromLogStr :: ToLogStr str => str -> TL.Text
 textFromLogStr str = TL.fromStrict $ TE.decodeUtf8 $ fromLogStr $ toLogStr str
