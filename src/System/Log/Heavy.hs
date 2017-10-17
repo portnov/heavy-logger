@@ -1,4 +1,4 @@
-{-# LANGUAGE OverloadedStrings, TypeSynonymInstances, FlexibleInstances, ExistentialQuantification, TypeFamilies, GeneralizedNewtypeDeriving, StandaloneDeriving, MultiParamTypeClasses, UndecidableInstances, FlexibleContexts #-}
+{-# LANGUAGE OverloadedStrings, TypeSynonymInstances, FlexibleInstances, ExistentialQuantification, TypeFamilies, GeneralizedNewtypeDeriving, StandaloneDeriving, MultiParamTypeClasses, UndecidableInstances, FlexibleContexts, Rank2Types #-}
 
 -- | This is the main module of @heavy-logger@ package. You usually need to import only this module.
 -- All generally required modules are re-exported.
@@ -39,12 +39,9 @@ import qualified Data.Text.Format.Heavy as F
 import System.Log.Heavy.Types
 import System.Log.Heavy.Backends
 
-withLogging :: (MonadBaseControl IO m, HasLogBackend m b, MonadIO m)
+withLogging :: (MonadBaseControl IO m, MonadIO m)
             => LoggingSettings
+            -> (forall b. IsLogBackend b => b -> m a)
             -> m a
-            -> m a
-withLogging (LoggingSettings settings) actions = do
-  bracket (liftIO $ initLogBackend settings)
-          (liftIO . cleanupLogBackend)
-          (const actions)
+withLogging (LoggingSettings settings) actions = withLoggingB settings actions
 

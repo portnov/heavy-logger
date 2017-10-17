@@ -22,12 +22,7 @@ main :: IO ()
 main = do
   [bstr] <- getArgs
   let settings = selectBackend bstr
-  runReaderT (main' settings) undefined
-
-
--- main' :: IsLogBackend b => LoggingSettings -> ReaderT b IO ()
-main' settings = do
-  withLogging settings $ do
+  withLogging settings $ \backend -> flip runReaderT backend $ do
       liftIO $ putStr "Your name? "
       liftIO $ hFlush stdout
       name <- liftIO $ getLine

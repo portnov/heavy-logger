@@ -1,4 +1,4 @@
-{-# LANGUAGE OverloadedStrings, TypeSynonymInstances, FlexibleInstances, ExistentialQuantification, TypeFamilies, GeneralizedNewtypeDeriving, StandaloneDeriving, MultiParamTypeClasses, UndecidableInstances, AllowAmbiguousTypes, ScopedTypeVariables, FunctionalDependencies #-}
+{-# LANGUAGE OverloadedStrings, TypeSynonymInstances, FlexibleInstances, ExistentialQuantification, TypeFamilies, GeneralizedNewtypeDeriving, StandaloneDeriving, MultiParamTypeClasses, UndecidableInstances, AllowAmbiguousTypes, ScopedTypeVariables, FunctionalDependencies, FlexibleContexts #-}
 
 -- | This module contains generic types definition, along with some utilities.
 module System.Log.Heavy.Types
@@ -16,6 +16,7 @@ import Control.Monad.Reader
 import Control.Monad.Logger (MonadLogger (..), LogLevel (..))
 import Control.Monad.Base
 import Control.Monad.Trans.Control
+import Control.Exception.Lifted (bracket)
 import Data.String
 import Language.Haskell.TH
 import qualified Data.Text as T
@@ -58,6 +59,15 @@ class IsLogBackend b where
   initLogBackend :: LogBackendSettings b -> IO b
   -- getLoggerSettings :: b -> LogBackendSettings b
   cleanupLogBackend :: b -> IO ()
+
+  withLoggingB :: (MonadBaseControl IO m, MonadIO m)
+            => LogBackendSettings b
+            -> (b -> m a)
+            -> m a
+  withLoggingB (settings) actions = do
+    bracket (liftIO $ initLogBackend settings)
+            (liftIO . cleanupLogBackend)
+            (actions)
 
 class (Monad mb, IsLogBackend b) => HasLogBackend mb b | mb -> b where
   getLogBackend :: mb b
