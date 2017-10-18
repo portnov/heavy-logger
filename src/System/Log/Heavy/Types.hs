@@ -5,12 +5,14 @@ module System.Log.Heavy.Types
   (
     -- * Data types
     LogSource, LogMessage (..), LogFilter, LogContextFrame (..), LogContext,
-    IsLogBackend (..), LogBackendSettings (..), LoggingSettings (..), Logger,
+    IsLogBackend (..), LogBackendSettings (..), LoggingSettings (..),
+    AnyLogBackend (..), LogContextFilter (..),
+    Logger,SpecializedLogger, 
     HasLogBackend (..), HasLogContext (..), HasLogging,
-    SpecializedLogger, HasLogger (..),
-    LoggingT (LoggingT),
+    HasLogger (..),
+    LoggingT (LoggingT), LoggingTState (..),
     -- * Main functions
-    logMessage
+    logMessage',
     runLoggingT,
     applyBackend,
     defaultLogFilter,
