@@ -39,24 +39,35 @@ import qualified Data.Text.Format.Heavy as F
 import System.Log.Heavy.Types
 import System.Log.Heavy.Backends
 
+-- | Execute actions with logging backend.
+-- This is mostly an utility function to be used to construct custom 
+-- logging frameworks for custom monad transformer stacks.
 withLoggingF :: (MonadBaseControl IO m, MonadIO m)
-            => LoggingSettings
-            -> (forall b. IsLogBackend b => b -> m a)
+            => LoggingSettings                        -- ^ Settings of arbitrary logging backend.
+            -> (forall b. IsLogBackend b => b -> m a) -- ^ Actions to execute with logging backend.
+                                                      --   Note that this type declaration binds argument
+                                                      --   to work with *any* implementation of backend.
             -> m a
 withLoggingF (LoggingSettings settings) actions = withLoggingB settings actions
 
+-- | Execute actions with logging.
+-- This function can be useful for monad stacks that store logging backend
+-- in State-like structure.
 withLogging :: (MonadBaseControl IO m, MonadIO m, HasLogger m)
-            => LoggingSettings
-            -> m a
+            => LoggingSettings -- ^ Settings of arbitrary logging backend
+            -> m a             -- ^ Actions to be executed
             -> m a
 withLogging (LoggingSettings settings) actions = 
     bracket (liftIO $ initLogBackend settings)
             (liftIO . cleanupLogBackend)
             (\b -> applyBackend b actions)
 
+-- | Execute actions with logging.
+-- This function is most convinient if you use @LoggingT@ as
+-- @HasLogging@ implementation.
 withLoggingT :: (MonadBaseControl IO m, MonadIO m)
-                  => LoggingSettings
-                  -> LoggingT m a
+                  => LoggingSettings   -- ^ Settings of arbitrary logging backend
+                  -> LoggingT m a      -- ^ Actions to be executed
                   -> m a
 withLoggingT (LoggingSettings settings) actions =
   withLoggingB settings $ \backend ->

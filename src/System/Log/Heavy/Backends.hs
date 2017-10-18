@@ -67,6 +67,7 @@ defFileSettings :: FilePath -> LogBackendSettings FastLoggerBackend
 defFileSettings path = FastLoggerSettings defaultLogFormat (FL.LogFile spec FL.defaultBufSize)
   where spec = FL.FileLogSpec path (10*1024*1024) 3
 
+-- | Fast-logger logging backend.
 data FastLoggerBackend = FastLoggerBackend {
     flbSettings :: LogBackendSettings FastLoggerBackend,
     flbTimedLogger :: TimedFastLogger,
@@ -103,6 +104,7 @@ defaultSyslogSettings = SyslogSettings defaultSyslogFormat "application" [] Sysl
 defaultSyslogFormat :: F.Format
 defaultSyslogFormat = "[{level}] {source}: {message}"
 
+-- | Syslog logging backend.
 data SyslogBackend = SyslogBackend {
     sbSettings :: LogBackendSettings SyslogBackend,
     sbIdent :: CString,
@@ -169,6 +171,7 @@ instance IsLogBackend ChanLoggerBackend where
   makeLogger settings msg = do
     liftIO $ writeChan (clChan settings) msg
 
+-- | Logging backend that writes log messages to several other backends in parallel.
 data ParallelBackend = ParallelBackend ![AnyLogBackend]
 
 instance IsLogBackend ParallelBackend where
@@ -187,6 +190,8 @@ instance IsLogBackend ParallelBackend where
   cleanupLogBackend (ParallelBackend list) =
     forM_ (reverse list) $ \(AnyLogBackend backend) -> cleanupLogBackend backend
 
+-- | Messages filtering backend. This backend passes a message to underlying backend,
+-- if this message conforms to specified filter.
 data Filtering b = FilteringBackend LogFilter b
 
 instance IsLogBackend b => IsLogBackend (Filtering b) where
@@ -218,6 +223,7 @@ checkLogLevel fltr m =
       | x `isPrefixOf` src && length x > length best = go x src xs
       | otherwise = go best src xs
 
+-- | Check if message filter matches filters from logging context
 checkContextFilter :: LogContext -> LogMessage -> Bool
 checkContextFilter context msg =
   let includeFilters = [fltr | Include fltr <- map lcfFilter context]
@@ -225,6 +231,7 @@ checkContextFilter context msg =
   in  or [checkLogLevel fltr msg | fltr <- includeFilters] &&
            (not $ or [checkLogLevel fltr msg | fltr <- excludeFilters])
 
+-- | Check if message filter matches filters from logging context
 checkContextFilterM :: HasLogContext m => LogMessage -> m Bool
 checkContextFilterM msg = do
   context <- getLogContext
