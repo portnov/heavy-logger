@@ -43,7 +43,7 @@ instance F.VarContainer LogMessageWithTime where
   lookupVar name (LogMessageWithTime ftime  (LogMessage {..})) =
       case lookup name stdVariables of
         Just value -> Just value
-        Nothing -> msum $ map (lookup name) contextVariables
+        Nothing -> Just $ fromMaybe (F.Variable TL.empty) $ msum $ map (lookup name) contextVariables
     where
       stdVariables :: [(TL.Text, F.Variable)]
       stdVariables = [("level", F.Variable $ showLevel lmLevel),
