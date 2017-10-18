@@ -57,6 +57,7 @@ data LogContextFrame = LogContextFrame {
       lcfVariables :: [(TL.Text, F.Variable)]
     , lcfFilter :: LogContextFilter
   }
+  deriving (Show)
 
 data LogContextFilter =
     NoChange

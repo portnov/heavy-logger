@@ -36,11 +36,16 @@ resolver: lts-9.9
 # non-dependency (i.e. a user package), and its test suites and benchmarks
 # will not be run. This is useful for tweaking upstream packages.
 packages:
-- .
+  - .
+  - location:
+      git: https://github.com/portnov/text-format-heavy.git
+      commit: master
+    extra-dep: true
+
 # Dependency packages to be pulled from upstream that are not in the resolver
 # (e.g., acme-missiles-0.3)
-extra-deps:
-  - text-format-heavy-0.1.2.0
+extra-deps: []
+  #- text-format-heavy-0.1.4.2
 
 # Override default flag values for local packages and extra-deps
 flags: {}

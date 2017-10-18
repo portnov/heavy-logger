@@ -37,6 +37,35 @@ import Prelude hiding (takeWhile)
 
 import System.Log.Heavy.Types
 
+data LogMessageWithTime = LogMessageWithTime FormattedTime LogMessage
+
+instance F.VarContainer LogMessageWithTime where
+  lookupVar name (LogMessageWithTime ftime  (LogMessage {..})) =
+      case lookup name stdVariables of
+        Just value -> Just value
+        Nothing -> msum $ map (lookup name) contextVariables
+    where
+      stdVariables :: [(TL.Text, F.Variable)]
+      stdVariables = [("level", F.Variable $ showLevel lmLevel),
+                      ("source", F.Variable $ intercalate "." lmSource),
+                      ("location", F.Variable $ show lmLocation),
+                      ("time", F.Variable ftime),
+                      ("message", F.Variable formattedMessage),
+                      ("fullcontext", F.Variable $ show lmContext)]
+
+      showLevel LevelDebug = "debug"
+      showLevel LevelInfo = "info"
+      showLevel LevelWarn = "warning"
+      showLevel LevelError = "error"
+      showLevel (LevelOther x) = T.unpack x
+
+      contextVariables :: [[(TL.Text, F.Variable)]]
+      contextVariables = map lcfVariables lmContext
+
+      formattedMessage =
+        let fmt = PF.parseFormat' lmFormatString
+        in  F.format fmt lmFormatVars
+
 -- | Default log message format.
 -- Corresponds to: @{time} [{level}] {source}: {message}\\n@
 defaultLogFormat :: F.Format
@@ -44,23 +73,5 @@ defaultLogFormat = PF.parseFormat' "{time} [{level}] {source}: {message}\n"
 
 -- | Format log message for output.
 formatLogMessage :: F.Format -> LogMessage -> FormattedTime -> LogStr
-formatLogMessage fmt (LogMessage {..}) ftime =
-    toLogStr $ F.format fmt variables
-  where
-    variables :: [(TL.Text, F.Variable)]
-    variables =  [("level", F.Variable $ showLevel lmLevel),
-                  ("source", F.Variable $ intercalate "." lmSource),
-                  ("location", F.Variable $ show lmLocation),
-                  ("time", F.Variable ftime),
-                  ("message", F.Variable formattedMessage)]
-
-    formattedMessage =
-      let fmt = PF.parseFormat' lmFormatString
-      in  F.format fmt lmFormatVars
-
-    showLevel LevelDebug = "debug"
-    showLevel LevelInfo = "info"
-    showLevel LevelWarn = "warning"
-    showLevel LevelError = "error"
-    showLevel (LevelOther x) = T.unpack x
+formatLogMessage fmt msg ftime = toLogStr $ F.format fmt $ LogMessageWithTime ftime msg
 
