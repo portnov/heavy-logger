@@ -10,12 +10,16 @@ import qualified System.Posix.Syslog as Syslog
 import System.Log.Heavy
 import System.Log.Heavy.Shortcuts
 import System.Log.FastLogger
-import Data.Text.Format.Heavy (Single (..))
+import Data.Text.Format.Heavy
+import qualified Data.Text.Format.Heavy.Parse as PF
+
+logFormat :: Format
+logFormat = PF.parseFormat' "{time} [{level}] {appname} {source}: {message}\n"
 
 selectBackend :: String -> LoggingSettings
-selectBackend "syslog" = LoggingSettings $ defaultSyslogSettings
-selectBackend "stderr" = LoggingSettings $ defStderrSettings
-selectBackend "stdout" = LoggingSettings $ defStdoutSettings
+selectBackend "syslog" = LoggingSettings $ defaultSyslogSettings {ssFormat = logFormat}
+selectBackend "stderr" = LoggingSettings $ defStderrSettings {lsFormat = logFormat}
+selectBackend "stdout" = LoggingSettings $ defStdoutSettings {lsFormat = logFormat}
 selectBackend "parallel" =
   LoggingSettings $ ParallelLogSettings [LoggingSettings defStderrSettings, LoggingSettings defaultSyslogSettings]
 selectBackend path = LoggingSettings $ defFileSettings path
@@ -24,7 +28,8 @@ main :: IO ()
 main = do
   [bstr] <- getArgs
   let settings = selectBackend bstr
-  withLoggingT settings $ withLogContext (LogContextFrame [] (Include defaultLogFilter)) $ do
+  let contextVariables = [("appname", Variable ("hello world" :: String))]
+  withLoggingT settings $ withLogContext (LogContextFrame contextVariables (Include defaultLogFilter)) $ do
       liftIO $ putStr "Your name? "
       liftIO $ hFlush stdout
       name <- liftIO $ getLine
