@@ -16,6 +16,7 @@ module System.Log.Heavy.Types
     runLoggingT,
     applyBackend,
     defaultLogFilter,
+    withLogVariable,
     -- * Utility functions
     splitString, splitDots,
   ) where
