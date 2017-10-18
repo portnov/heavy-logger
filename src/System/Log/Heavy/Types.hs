@@ -39,6 +39,7 @@ data LogMessage = forall vars. F.VarContainer vars => LogMessage {
                            --   will want to use TH quotes to fill this.
   , lmFormatString :: TL.Text -- ^ Log message string format (in @Data.Text.Format.Heavy@ syntax)
   , lmFormatVars :: vars   -- ^ Log message substitution variables. Use @()@ if you do not have variables.
+  , lmContext :: LogContext -- ^ Logging context. Authomatically filled by @logMessage@.
   }
 
 -- | Log messages filter by source and level.
@@ -186,7 +187,7 @@ textFromLogStr str = TL.fromStrict $ TE.decodeUtf8 $ fromLogStr $ toLogStr str
 instance (Monad m, MonadIO m, HasLogger m) => MonadLogger m where
   monadLoggerLog loc src level msg = do
       logger <- getLogger
-      liftIO $ logger $ LogMessage level src' loc (textFromLogStr msg) ()
+      liftIO $ logger $ LogMessage level src' loc (textFromLogStr msg) () []
     where
       src' = splitDots $ T.unpack src
 
