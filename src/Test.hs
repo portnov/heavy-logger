@@ -16,6 +16,8 @@ selectBackend :: String -> LoggingSettings
 selectBackend "syslog" = LoggingSettings $ defaultSyslogSettings
 selectBackend "stderr" = LoggingSettings $ defStderrSettings
 selectBackend "stdout" = LoggingSettings $ defStdoutSettings
+selectBackend "parallel" =
+  LoggingSettings $ ParallelLogSettings [LoggingSettings defStderrSettings, LoggingSettings defaultSyslogSettings]
 selectBackend path = LoggingSettings $ defFileSettings path
 
 main :: IO ()

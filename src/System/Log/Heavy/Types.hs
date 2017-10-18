@@ -71,6 +71,8 @@ class IsLogBackend b where
             (liftIO . cleanupLogBackend)
             (actions)
 
+data AnyLogBackend = forall b. IsLogBackend b => AnyLogBackend b
+
 -- | Constraint for monads in which it is possible to obtain logging backend.
 class IsLogBackend b => HasLogBackend b m where
   getLogBackend :: m b

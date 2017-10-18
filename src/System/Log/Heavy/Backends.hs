@@ -7,6 +7,7 @@ module System.Log.Heavy.Backends
   FastLoggerBackend,
   SyslogBackend,
   ChanLoggerBackend,
+  ParallelBackend,
   LogBackendSettings (..),
   -- * Default settings
   defStdoutSettings,
@@ -174,6 +175,24 @@ instance IsLogBackend ChanLoggerBackend where
     let fltr = clFilter settings
     when (checkLogLevel fltr msg) $ do
       liftIO $ writeChan (clChan settings) msg
+
+data ParallelBackend = ParallelBackend ![AnyLogBackend]
+
+instance IsLogBackend ParallelBackend where
+  data LogBackendSettings ParallelBackend = ParallelLogSettings [LoggingSettings]
+
+  makeLogger (ParallelBackend list) msg =
+    forM_ list $ \(AnyLogBackend backend) -> makeLogger backend msg
+
+  initLogBackend (ParallelLogSettings list) = do
+    backends <- do 
+                forM list $ \(LoggingSettings settings) -> do
+                  backend <- initLogBackend settings
+                  return $ AnyLogBackend backend
+    return $ ParallelBackend backends
+      
+  cleanupLogBackend (ParallelBackend list) =
+    forM_ (reverse list) $ \(AnyLogBackend backend) -> cleanupLogBackend backend
 
 -- | Check if message level matches given filter.
 checkLogLevel :: LogFilter -> LogMessage -> Bool
