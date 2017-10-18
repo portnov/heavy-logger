@@ -99,11 +99,16 @@ class IsLogBackend b => HasLogBackend b m where
 -- @
 data LoggingSettings = forall b. IsLogBackend b => LoggingSettings (LogBackendSettings b)
 
+data LoggingTState = LoggingTState {
+    ltsLogger :: SpecializedLogger
+  , ltsContext :: LogContext
+  }
+
 -- | Logging monad transformer.
 newtype LoggingT m a = LoggingT {
-    runLoggingT_ :: ReaderT (SpecializedLogger, LogContext) m a
+    runLoggingT_ :: ReaderT LoggingTState m a
   }
-  deriving (Functor, Applicative, Monad, MonadReader (SpecializedLogger, LogContext), MonadTrans)
+  deriving (Functor, Applicative, Monad, MonadReader LoggingTState, MonadTrans)
 
 deriving instance MonadIO m => MonadIO (LoggingT m)
 
@@ -114,7 +119,7 @@ instance MonadIO m => MonadBase IO (LoggingT m) where
   liftBase = liftIO
 
 instance MonadTransControl LoggingT where
-    type StT LoggingT a = StT (ReaderT SpecializedLogger) a
+    type StT LoggingT a = StT (ReaderT LoggingTState) a
     liftWith = defaultLiftWith LoggingT runLoggingT_
     restoreT = defaultRestoreT LoggingT
 
@@ -124,8 +129,8 @@ instance (MonadBaseControl IO m, MonadIO m) => MonadBaseControl IO (LoggingT m) 
     restoreM         = defaultRestoreM
 
 -- | Run logging monad
-runLoggingT :: LoggingT m a -> SpecializedLogger -> LogContext -> m a
-runLoggingT actions logger context = runReaderT (runLoggingT_ actions) (logger, context)
+runLoggingT :: LoggingT m a -> LoggingTState -> m a
+runLoggingT actions context = runReaderT (runLoggingT_ actions) context
 
 -- | Logging function
 type Logger backend = backend -> LogMessage -> IO ()
@@ -148,8 +153,8 @@ class Monad m => HasLogger m where
 --   localLogger l = local (const l)
 
 instance Monad m => HasLogger (LoggingT m) where
-  getLogger = asks fst
-  localLogger l actions = LoggingT $ ReaderT $ \(_, context) -> runReaderT (runLoggingT_ actions) (l, context)
+  getLogger = asks ltsLogger
+  localLogger l actions = LoggingT $ ReaderT $ \lts -> runReaderT (runLoggingT_ actions) $ lts {ltsLogger = l}
 
 applyBackend :: (IsLogBackend b, HasLogger m) => b -> m a -> m a
 applyBackend b actions = do
@@ -161,10 +166,10 @@ class Monad m => HasLogContext m where
   getLogContext :: m LogContext
 
 instance (Monad m) => HasLogContext (LoggingT m) where
-  getLogContext = asks snd
+  getLogContext = asks ltsContext
 
   withLogContext frame actions =
-    LoggingT $ ReaderT $ \(logger, oldContext) -> runReaderT (runLoggingT_ actions) (logger, frame:oldContext)
+    LoggingT $ ReaderT $ \lts -> runReaderT (runLoggingT_ actions) $ lts {ltsContext = frame: ltsContext lts}
 
 type HasLogging m = (HasLogger m, HasLogContext m)
 
