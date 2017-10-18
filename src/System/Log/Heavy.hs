@@ -12,10 +12,11 @@
 --  import Data.Text.Format.Heavy
 --  ...
 --
---  withLogging backend id $ do liftIO $ putStr "Your name? "
+--  withLoggingT settings $ do
+--      liftIO $ putStr "Your name? "
 --      liftIO $ hFlush stdout
 --      name <- liftIO $ getLine
---      logMessage $ infoMessage "name was {}" (Single name)
+--      info "name was {}" (Single name)
 --      liftIO $ putStrLn $ "Hello, " ++ name
 -- @
 --
