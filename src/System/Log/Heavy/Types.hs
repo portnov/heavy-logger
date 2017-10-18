@@ -175,7 +175,7 @@ instance (Monad m) => HasLogContext (LoggingT m) where
 
 type HasLogging m = (HasLogger m, HasLogContext m)
 
-withLogVariable :: (HasLogging m, F.Formatable v) => TL.Text -> v -> m a -> m a
+withLogVariable :: (HasLogContext m, F.Formatable v) => TL.Text -> v -> m a -> m a
 withLogVariable name value =
   withLogContext (LogContextFrame [(name, F.Variable value)] NoChange)
 
