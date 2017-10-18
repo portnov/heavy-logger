@@ -208,10 +208,11 @@ withLogVariable name value =
   withLogContext (LogContextFrame [(name, F.Variable value)] NoChange)
 
 -- | Compatibility instance.
-instance (Monad m, MonadIO m, HasLogger m) => MonadLogger m where
+instance (Monad m, MonadIO m, HasLogging m) => MonadLogger m where
   monadLoggerLog loc src level msg = do
       logger <- getLogger
-      liftIO $ logger $ LogMessage level src' loc (textFromLogStr msg) () []
+      context <- getLogContext
+      liftIO $ logger $ LogMessage level src' loc (textFromLogStr msg) () context
     where
       src' = splitDots $ T.unpack src
 
