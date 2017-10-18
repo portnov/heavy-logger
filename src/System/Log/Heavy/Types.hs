@@ -149,7 +149,13 @@ applyBackend b actions = do
 
 class Monad m => HasLogContext m where
   withLogContext :: LogContextFrame -> m a -> m a
-  getCurrentContext :: m LogContext
+  getLogContext :: m LogContext
+
+instance (Monad m) => HasLogContext (LoggingT m) where
+  getLogContext = asks snd
+
+  withLogContext frame actions =
+    LoggingT $ ReaderT $ \(logger, oldContext) -> runReaderT (runLoggingT_ actions) (logger, frame:oldContext)
 
 -- instance (Monad m, MonadIO m, HasLogBackend b m) => HasLogger b m where
 --   getLogger = do
