@@ -36,21 +36,21 @@ warnMessage fmt vars = LogMessage LevelWarn [] undefined fmt vars
 
 -- | Log debug message.
 -- Note: this message will not contain source information.
-debug :: forall m vars. (F.VarContainer vars, MonadIO m, HasLogger m) => TL.Text -> vars -> m ()
+debug :: forall m vars. (F.VarContainer vars, MonadIO m, HasLogging m) => TL.Text -> vars -> m ()
 debug fmt vars = logMessage $ debugMessage fmt vars
 
 -- | Log info message.
 -- Note: this message will not contain source information.
-info :: forall m vars. (F.VarContainer vars, MonadIO m, HasLogger m) => TL.Text -> vars -> m ()
+info :: forall m vars. (F.VarContainer vars, MonadIO m, HasLogging m) => TL.Text -> vars -> m ()
 info fmt vars = logMessage $ infoMessage fmt vars
 
 -- | Log error message.
 -- Note: this message will not contain source information.
-reportError :: forall m vars. (F.VarContainer vars, MonadIO m, HasLogger m) => TL.Text -> vars -> m ()
+reportError :: forall m vars. (F.VarContainer vars, MonadIO m, HasLogging m) => TL.Text -> vars -> m ()
 reportError fmt vars = logMessage $ errorMessage fmt vars
 
 -- | Log warning message.
 -- Note: this message will not contain source information.
-warning :: forall m vars. (F.VarContainer vars, MonadIO m, HasLogger m) => TL.Text -> vars -> m ()
+warning :: forall m vars. (F.VarContainer vars, MonadIO m, HasLogging m) => TL.Text -> vars -> m ()
 warning fmt vars = logMessage $ warnMessage fmt vars
 

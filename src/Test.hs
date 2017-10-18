@@ -24,7 +24,7 @@ main :: IO ()
 main = do
   [bstr] <- getArgs
   let settings = selectBackend bstr
-  withLoggingT settings $ do
+  withLoggingT settings $ withLogContext (LogContextFrame [] (Include defaultLogFilter)) $ do
       liftIO $ putStr "Your name? "
       liftIO $ hFlush stdout
       name <- liftIO $ getLine

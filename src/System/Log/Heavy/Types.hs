@@ -52,7 +52,17 @@ type LogFilter = [(LogSource, LogLevel)]
 defaultLogFilter :: LogFilter
 defaultLogFilter = [([], LevelInfo)]
 
-type LogContextFrame = [(TL.Text, F.Variable)]
+data LogContextFrame = LogContextFrame {
+      lcfVariables :: [(TL.Text, F.Variable)]
+    , lcfFilter :: LogContextFilter
+  }
+
+data LogContextFilter =
+    NoChange
+  | Include LogFilter
+  | Exclude LogFilter
+  deriving (Eq, Show)
+
 type LogContext = [LogContextFrame]
 
 -- | Logging backend class.
@@ -133,13 +143,12 @@ class Monad m => HasLogger m where
   getLogger :: m SpecializedLogger
   localLogger :: SpecializedLogger -> m a -> m a
 
-instance (Monad m, MonadReader SpecializedLogger m) => HasLogger m where
-  getLogger = ask
-  localLogger l = local (const l)
+-- instance (Monad m, MonadReader SpecializedLogger m) => HasLogger m where
+--   getLogger = ask
+--   localLogger l = local (const l)
 
 instance Monad m => HasLogger (LoggingT m) where
   getLogger = asks fst
-
   localLogger l actions = LoggingT $ ReaderT $ \(_, context) -> runReaderT (runLoggingT_ actions) (l, context)
 
 applyBackend :: (IsLogBackend b, HasLogger m) => b -> m a -> m a
@@ -156,6 +165,8 @@ instance (Monad m) => HasLogContext (LoggingT m) where
 
   withLogContext frame actions =
     LoggingT $ ReaderT $ \(logger, oldContext) -> runReaderT (runLoggingT_ actions) (logger, frame:oldContext)
+
+type HasLogging m = (HasLogger m, HasLogContext m)
 
 -- instance (Monad m, MonadIO m, HasLogBackend b m) => HasLogger b m where
 --   getLogger = do
@@ -190,8 +201,8 @@ splitDots :: String -> [String]
 splitDots = splitString '.'
 
 -- | Log a message
-logMessage :: forall m. (HasLogger m, MonadIO m) => LogMessage -> m ()
-logMessage msg = do
+logMessage' :: forall m. (HasLogger m, MonadIO m) => LogMessage -> m ()
+logMessage' msg = do
   logger <- getLogger
   liftIO $ logger msg
 

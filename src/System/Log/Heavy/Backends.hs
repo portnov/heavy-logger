@@ -16,7 +16,7 @@ module System.Log.Heavy.Backends
   defaultSyslogSettings,
   defaultSyslogFormat,
   -- * Utilities for other backends implementation
-  checkLogLevel
+  checkLogLevel, checkContextFilter, logMessage
   ) where
 
 import Control.Monad
@@ -25,6 +25,7 @@ import Control.Monad.Reader
 import Control.Monad.Logger (MonadLogger (..), LogLevel (..))
 import Control.Concurrent
 import Data.List (isPrefixOf)
+import Data.Maybe
 import qualified Data.Text as T
 import qualified Data.ByteString.Unsafe as BSU
 import qualified Data.Text.Format.Heavy as F
@@ -215,4 +216,20 @@ checkLogLevel fltr m =
       | src == x = x
       | x `isPrefixOf` src && length x > length best = go x src xs
       | otherwise = go best src xs
+
+checkContextFilter :: HasLogContext m => LogMessage -> m Bool
+checkContextFilter msg = do
+  context <- getLogContext
+  let includeFilters = [fltr | Include fltr <- map lcfFilter context]
+  let excludeFilters = [fltr | Exclude fltr <- map lcfFilter context]
+  return $ or [checkLogLevel fltr msg | fltr <- includeFilters] &&
+           (not $ or [checkLogLevel fltr msg | fltr <- excludeFilters])
+
+-- | Log a message
+logMessage :: forall m. (HasLogging m, MonadIO m) => LogMessage -> m ()
+logMessage msg = do
+  ok <- checkContextFilter msg
+  when ok $ do
+    logger <- getLogger
+    liftIO $ logger msg
 
