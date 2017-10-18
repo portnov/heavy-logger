@@ -53,16 +53,16 @@ import System.Log.Heavy.Format
 
 -- | Default settings for fast-logger stdout output
 defStdoutSettings :: LogBackendSettings FastLoggerBackend
-defStdoutSettings = FastLoggerSettings defaultLogFilter defaultLogFormat (FL.LogStdout FL.defaultBufSize)
+defStdoutSettings = FastLoggerSettings defaultLogFormat (FL.LogStdout FL.defaultBufSize)
 
 -- | Default settings for fast-logger stderr output
 defStderrSettings :: LogBackendSettings FastLoggerBackend
-defStderrSettings = FastLoggerSettings defaultLogFilter defaultLogFormat (FL.LogStderr FL.defaultBufSize)
+defStderrSettings = FastLoggerSettings defaultLogFormat (FL.LogStderr FL.defaultBufSize)
 
 -- | Default settings for fast-logger file output.
 -- This implies log rotation when log file size reaches 10Mb.
 defFileSettings :: FilePath -> LogBackendSettings FastLoggerBackend
-defFileSettings path = FastLoggerSettings defaultLogFilter defaultLogFormat (FL.LogFile spec FL.defaultBufSize)
+defFileSettings path = FastLoggerSettings defaultLogFormat (FL.LogFile spec FL.defaultBufSize)
   where spec = FL.FileLogSpec path (10*1024*1024) 3
 
 data FastLoggerBackend = FastLoggerBackend {
@@ -74,8 +74,7 @@ data FastLoggerBackend = FastLoggerBackend {
 instance IsLogBackend FastLoggerBackend where
     -- | Settings of fast-logger backend. This mostly reflects settings of fast-logger itself.
     data LogBackendSettings FastLoggerBackend = FastLoggerSettings {
-        lsFilter :: LogFilter -- ^ Log messages filter
-      , lsFormat :: F.Format -- ^ Log message format
+        lsFormat :: F.Format -- ^ Log message format
       , lsType :: FL.LogType   -- ^ Fast-logger target settings
       }
 
@@ -89,15 +88,13 @@ instance IsLogBackend FastLoggerBackend where
 
     makeLogger backend msg = do
       let settings = flbSettings backend
-      let fltr = lsFilter settings
       let format = lsFormat settings
       let logger = flbTimedLogger backend
-      when (checkLogLevel fltr msg) $ do
-        logger $ formatLogMessage format msg
+      logger $ formatLogMessage format msg
 
 -- | Default settings for syslog backend
 defaultSyslogSettings :: LogBackendSettings SyslogBackend
-defaultSyslogSettings = SyslogSettings defaultLogFilter defaultSyslogFormat "application" [] Syslog.User
+defaultSyslogSettings = SyslogSettings defaultSyslogFormat "application" [] Syslog.User
 
 -- | Default log message format fof syslog backend:
 -- @[{level}] {source}: {message}@
@@ -113,8 +110,7 @@ data SyslogBackend = SyslogBackend {
 instance IsLogBackend SyslogBackend where
     -- | Settings for syslog backend. This mostly reflects syslog API.
     data LogBackendSettings SyslogBackend = SyslogSettings {
-        ssFilter :: LogFilter         -- ^ Log messages filter
-      , ssFormat :: F.Format         -- ^ Log message format. Usually you do not want to put time here,
+        ssFormat :: F.Format         -- ^ Log message format. Usually you do not want to put time here,
                                       --   because syslog writes time to log by itself by default.
       , ssIdent :: String             -- ^ Syslog source identifier. Usually the name of your program.
       , ssOptions :: [Syslog.Option]  -- ^ Syslog options
@@ -134,15 +130,13 @@ instance IsLogBackend SyslogBackend where
 
     makeLogger backend msg = do
         let settings = sbSettings backend
-        let fltr = ssFilter settings
-            format = ssFormat settings
+        let format = ssFormat settings
             facility = ssFacility settings
             tcache = sbTimeCache backend
-        when (checkLogLevel fltr msg) $ do
-          time <- tcache
-          let str = formatLogMessage format msg time
-          BSU.unsafeUseAsCStringLen (fromLogStr str) $
-              Syslog.syslog (Just facility) (levelToPriority $ lmLevel msg)
+        time <- tcache
+        let str = formatLogMessage format msg time
+        BSU.unsafeUseAsCStringLen (fromLogStr str) $
+            Syslog.syslog (Just facility) (levelToPriority $ lmLevel msg)
 
       where
         levelToPriority :: LogLevel -> Syslog.Priority
@@ -160,8 +154,7 @@ instance IsLogBackend SyslogBackend where
 
 -- | Logging backend which writes all messages to the @Chan@
 data ChanLoggerBackend = ChanLoggerBackend {
-       clFilter :: LogFilter      -- ^ Log messages filter
-     , clChan :: Chan LogMessage  -- ^ @Chan@ where write messages to
+       clChan :: Chan LogMessage  -- ^ @Chan@ where write messages to
      }
 
 instance IsLogBackend ChanLoggerBackend where
@@ -172,9 +165,7 @@ instance IsLogBackend ChanLoggerBackend where
   cleanupLogBackend _ = return ()
 
   makeLogger settings msg = do
-    let fltr = clFilter settings
-    when (checkLogLevel fltr msg) $ do
-      liftIO $ writeChan (clChan settings) msg
+    liftIO $ writeChan (clChan settings) msg
 
 data ParallelBackend = ParallelBackend ![AnyLogBackend]
 
@@ -193,6 +184,21 @@ instance IsLogBackend ParallelBackend where
       
   cleanupLogBackend (ParallelBackend list) =
     forM_ (reverse list) $ \(AnyLogBackend backend) -> cleanupLogBackend backend
+
+data Filtering b = FilteringBackend LogFilter b
+
+instance IsLogBackend b => IsLogBackend (Filtering b) where
+  data LogBackendSettings (Filtering b) = Filtering LogFilter (LogBackendSettings b)
+
+  makeLogger (FilteringBackend fltr backend) msg = do
+    when (checkLogLevel fltr msg) $ do
+      makeLogger backend msg
+
+  initLogBackend (Filtering fltr settings) = do
+    backend <- initLogBackend settings
+    return $ FilteringBackend fltr backend
+
+  cleanupLogBackend (FilteringBackend _ b) = cleanupLogBackend b
 
 -- | Check if message level matches given filter.
 checkLogLevel :: LogFilter -> LogMessage -> Bool
