@@ -61,5 +61,5 @@ withLoggingT :: (MonadBaseControl IO m, MonadIO m)
 withLoggingT (LoggingSettings settings) actions =
   withLoggingB settings $ \backend ->
       let logger = makeLogger backend
-      in  runLoggingT actions logger
+      in  runLoggingT actions logger []
 

@@ -52,6 +52,9 @@ type LogFilter = [(LogSource, LogLevel)]
 defaultLogFilter :: LogFilter
 defaultLogFilter = [([], LevelInfo)]
 
+type LogContextFrame = [(TL.Text, F.Variable)]
+type LogContext = [LogContextFrame]
+
 -- | Logging backend class.
 class IsLogBackend b where
   data LogBackendSettings b
@@ -88,9 +91,9 @@ data LoggingSettings = forall b. IsLogBackend b => LoggingSettings (LogBackendSe
 
 -- | Logging monad transformer.
 newtype LoggingT m a = LoggingT {
-    runLoggingT_ :: ReaderT SpecializedLogger m a
+    runLoggingT_ :: ReaderT (SpecializedLogger, LogContext) m a
   }
-  deriving (Functor, Applicative, Monad, MonadReader SpecializedLogger, MonadTrans)
+  deriving (Functor, Applicative, Monad, MonadReader (SpecializedLogger, LogContext), MonadTrans)
 
 deriving instance MonadIO m => MonadIO (LoggingT m)
 
@@ -111,8 +114,8 @@ instance (MonadBaseControl IO m, MonadIO m) => MonadBaseControl IO (LoggingT m) 
     restoreM         = defaultRestoreM
 
 -- | Run logging monad
-runLoggingT :: LoggingT m a -> SpecializedLogger -> m a
-runLoggingT actions logger = runReaderT (runLoggingT_ actions) logger
+runLoggingT :: LoggingT m a -> SpecializedLogger -> LogContext -> m a
+runLoggingT actions logger context = runReaderT (runLoggingT_ actions) (logger, context)
 
 -- | Logging function
 type Logger backend = backend -> LogMessage -> IO ()
@@ -138,6 +141,10 @@ applyBackend :: (IsLogBackend b, HasLogger m) => b -> m a -> m a
 applyBackend b actions = do
   let logger = makeLogger b
   localLogger logger actions
+
+class Monad m => HasLogContext m where
+  withLogContext :: LogContextFrame -> m a -> m a
+  getCurrentContext :: m LogContext
 
 -- instance (Monad m, MonadIO m, HasLogBackend b m) => HasLogger b m where
 --   getLogger = do
