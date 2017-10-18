@@ -137,6 +137,11 @@ instance (Monad m, MonadReader SpecializedLogger m) => HasLogger m where
   getLogger = ask
   localLogger l = local (const l)
 
+instance Monad m => HasLogger (LoggingT m) where
+  getLogger = asks fst
+
+  localLogger l actions = LoggingT $ ReaderT $ \(_, context) -> runReaderT (runLoggingT_ actions) (l, context)
+
 applyBackend :: (IsLogBackend b, HasLogger m) => b -> m a -> m a
 applyBackend b actions = do
   let logger = makeLogger b
