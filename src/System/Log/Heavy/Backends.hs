@@ -228,8 +228,9 @@ checkContextFilter :: LogContext -> LogMessage -> Bool
 checkContextFilter context msg =
   let includeFilters = [fltr | Include fltr <- map lcfFilter context]
       excludeFilters = [fltr | Exclude fltr <- map lcfFilter context]
-  in  or [checkLogLevel fltr msg | fltr <- includeFilters] &&
-           (not $ or [checkLogLevel fltr msg | fltr <- excludeFilters])
+      includeOk = null includeFilters || or [checkLogLevel fltr msg | fltr <- includeFilters]
+      excludeOk = or [checkLogLevel fltr msg | fltr <- excludeFilters]
+  in  includeOk && not excludeOk
 
 -- | Check if message filter matches filters from logging context
 checkContextFilterM :: HasLogContext m => LogMessage -> m Bool
