@@ -26,6 +26,7 @@ library
   -- other-extensions:    
   build-depends:       base >=4.8 && <5.0,
                        mtl >= 2.2.1,
+                       containers >= 0.5,
                        transformers-base >= 0.4.4,
                        monad-control >= 1.0.1.0,
                        lifted-base >= 0.2.3,

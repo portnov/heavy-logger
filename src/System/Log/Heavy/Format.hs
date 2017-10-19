@@ -26,8 +26,11 @@ import Data.List (intersperse, intercalate)
 import Data.String
 import Data.Char
 import Data.Maybe
+import Data.Monoid
+import qualified Data.Map as M
 import qualified Data.Text as T
 import qualified Data.Text.Lazy as TL
+import qualified Data.Text.Lazy.Builder as Builder
 import qualified Data.ByteString as B
 -- import Data.Attoparsec.ByteString
 import System.Log.FastLogger
@@ -51,7 +54,7 @@ instance F.VarContainer LogMessageWithTime where
                       ("location", F.Variable $ show lmLocation),
                       ("time", F.Variable ftime),
                       ("message", F.Variable formattedMessage),
-                      ("fullcontext", F.Variable $ show lmContext)]
+                      ("fullcontext", F.Variable fullContext)]
 
       showLevel LevelDebug = "debug"
       showLevel LevelInfo = "info"
@@ -61,6 +64,15 @@ instance F.VarContainer LogMessageWithTime where
 
       contextVariables :: [[(TL.Text, F.Variable)]]
       contextVariables = map lcfVariables lmContext
+
+      fullContext :: TL.Text
+      fullContext = TL.concat $ map showContextVar $ M.assocs $ M.fromList $ concat contextVariables
+
+      showContextVar :: (TL.Text, F.Variable) -> TL.Text
+      showContextVar (name, value) = name <> "=" <> formatVar value <> "; "
+
+      formatVar :: F.Variable -> TL.Text
+      formatVar var = either error Builder.toLazyText $ F.formatVar Nothing var
 
       formattedMessage =
         let fmt = PF.parseFormat' lmFormatString
