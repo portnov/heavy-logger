@@ -13,6 +13,8 @@ module System.Log.Heavy.Types
     LoggingT (LoggingT), LoggingTState (..),
     -- * Standard severity levels
     debug_level, info_level, warn_level, error_level, fatal_level,
+    -- * Conversion functions
+    levelToLogLevel, levelToLogLevel,
     -- * Main functions
     logMessage',
     runLoggingT,
