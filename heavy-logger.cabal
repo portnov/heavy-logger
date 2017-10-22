@@ -18,6 +18,7 @@ cabal-version:       >=1.18
 
 library
   exposed-modules:     System.Log.Heavy
+                       System.Log.Heavy.Level
                        System.Log.Heavy.Types
                        System.Log.Heavy.Format
                        System.Log.Heavy.Backends

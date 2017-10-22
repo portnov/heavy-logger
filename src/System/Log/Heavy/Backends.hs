@@ -36,6 +36,7 @@ import Foreign.C.String (CString, newCString)
 import Foreign.Marshal.Alloc (free)
 
 import System.Log.Heavy.Types
+import System.Log.Heavy.Level
 import System.Log.Heavy.Format
 
 -- $description

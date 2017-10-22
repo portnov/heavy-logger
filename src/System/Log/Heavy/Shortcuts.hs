@@ -15,6 +15,7 @@ import qualified Data.Text.Lazy as TL
 import qualified Data.Text.Format.Heavy as F
 
 import System.Log.Heavy.Types
+import System.Log.Heavy.Level
 import System.Log.Heavy.Backends
 
 -- | Message stub with Info severity.

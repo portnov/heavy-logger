@@ -26,6 +26,7 @@ module System.Log.Heavy
   (
     -- * Reexports
     module System.Log.Heavy.Types,
+    module System.Log.Heavy.Level,
     module System.Log.Heavy.Backends,
     withLogging, withLoggingF, withLoggingT
   ) where
@@ -38,6 +39,7 @@ import qualified Data.Text.Lazy as TL
 import qualified Data.Text.Format.Heavy as F
 
 import System.Log.Heavy.Types
+import System.Log.Heavy.Level
 import System.Log.Heavy.Backends
 
 -- | Execute actions with logging backend.
