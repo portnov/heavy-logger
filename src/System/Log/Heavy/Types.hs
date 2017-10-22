@@ -15,7 +15,7 @@ module System.Log.Heavy.Types
     debug_level, info_level, warn_level, error_level, fatal_level,
     disable_logging,
     -- * Conversion functions
-    levelToLogLevel, levelToLogLevel,
+    levelToLogLevel, logLevelToLevel,
     -- * Main functions
     logMessage',
     runLoggingT,
