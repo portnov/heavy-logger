@@ -202,7 +202,7 @@ checkLogLevel :: LogFilter -> LogMessage -> Bool
 checkLogLevel fltr m =
     case lookup (bestMatch (lmSource m) (map fst fltr)) fltr of
       Nothing -> False
-      Just level -> lmLevel m >= level
+      Just level -> lmLevel m <= level
   where
     bestMatch :: LogSource -> [LogSource] -> LogSource
     bestMatch src list = go [] src list
