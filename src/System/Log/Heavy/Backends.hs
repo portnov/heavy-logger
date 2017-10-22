@@ -8,7 +8,7 @@ module System.Log.Heavy.Backends
   SyslogBackend,
   ChanLoggerBackend,
   ParallelBackend,
-  Filtering,
+  Filtering, filtering,
   LogBackendSettings (..),
   -- * Default settings
   defStdoutSettings,
@@ -192,13 +192,17 @@ instance IsLogBackend ParallelBackend where
 
 -- | Messages filtering backend. This backend passes a message to underlying backend,
 -- if this message conforms to specified filter.
-data Filtering b = FilteringBackend LogFilter b
+data Filtering b = FilteringBackend (LogMessage -> Bool) b
+
+-- | Specify filter as @LogFilter@.
+filtering :: IsLogBackend b => LogFilter -> LogBackendSettings b -> LogBackendSettings (Filtering b)
+filtering fltr b = Filtering (checkLogLevel fltr) b
 
 instance IsLogBackend b => IsLogBackend (Filtering b) where
-  data LogBackendSettings (Filtering b) = Filtering LogFilter (LogBackendSettings b)
+  data LogBackendSettings (Filtering b) = Filtering (LogMessage -> Bool) (LogBackendSettings b)
 
   makeLogger (FilteringBackend fltr backend) msg = do
-    when (checkLogLevel fltr msg) $ do
+    when (fltr msg) $ do
       makeLogger backend msg
 
   initLogBackend (Filtering fltr settings) = do
