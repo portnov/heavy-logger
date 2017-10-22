@@ -13,6 +13,7 @@ module System.Log.Heavy.Types
     LoggingT (LoggingT), LoggingTState (..),
     -- * Standard severity levels
     debug_level, info_level, warn_level, error_level, fatal_level,
+    disable_logging,
     -- * Conversion functions
     levelToLogLevel, levelToLogLevel,
     -- * Main functions
@@ -77,6 +78,12 @@ error_level = Level "ERROR" 200 Syslog.Error
 -- | FATAL level: something went terribly wrong, application is to be stopped.
 fatal_level :: Level
 fatal_level = Level "FATAL" 100 Syslog.Emergency
+
+-- | DISABLED level. This has integer identifier of 0, which is supposed to
+-- be less than any other level. This value can be used to disable logging at
+-- all.
+disable_logging :: Level
+disable_logging = Level "DISABLED" 0 Syslog.Emergency
 
 -- | Conversion function
 levelToLogLevel :: Level -> LogLevel
