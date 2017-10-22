@@ -49,18 +49,12 @@ instance F.VarContainer LogMessageWithTime where
         Nothing -> Just $ fromMaybe (F.Variable TL.empty) $ msum $ map (lookup name) contextVariables
     where
       stdVariables :: [(TL.Text, F.Variable)]
-      stdVariables = [("level", F.Variable $ showLevel lmLevel),
+      stdVariables = [("level", F.Variable $ F.Shown lmLevel),
                       ("source", F.Variable $ intercalate "." lmSource),
                       ("location", F.Variable $ show lmLocation),
                       ("time", F.Variable ftime),
                       ("message", F.Variable formattedMessage),
                       ("fullcontext", F.Variable fullContext)]
-
-      showLevel LevelDebug = "debug"
-      showLevel LevelInfo = "info"
-      showLevel LevelWarn = "warning"
-      showLevel LevelError = "error"
-      showLevel (LevelOther x) = T.unpack x
 
       contextVariables :: [[(TL.Text, F.Variable)]]
       contextVariables = map lcfVariables lmContext

@@ -11,7 +11,6 @@ module System.Log.Heavy.Shortcuts
 
 import Control.Monad.Trans
 import Control.Monad.Reader
-import Control.Monad.Logger (LogLevel (..))
 import qualified Data.Text.Lazy as TL
 import qualified Data.Text.Format.Heavy as F
 
@@ -20,19 +19,19 @@ import System.Log.Heavy.Backends
 
 -- | Message stub with Info severity.
 infoMessage :: F.VarContainer vars => TL.Text -> vars -> LogMessage
-infoMessage fmt vars = LogMessage LevelInfo [] undefined fmt vars []
+infoMessage fmt vars = LogMessage info_level [] undefined fmt vars []
 
 -- | Message stub with Debug severity.
 debugMessage :: F.VarContainer vars => TL.Text -> vars -> LogMessage
-debugMessage fmt vars = LogMessage LevelDebug [] undefined fmt vars []
+debugMessage fmt vars = LogMessage debug_level [] undefined fmt vars []
 
 -- | Message stub with Error severity.
 errorMessage :: F.VarContainer vars => TL.Text -> vars -> LogMessage
-errorMessage fmt vars = LogMessage LevelError [] undefined fmt vars []
+errorMessage fmt vars = LogMessage error_level [] undefined fmt vars []
 
 -- | Message stub with Warning severity.
 warnMessage :: F.VarContainer vars => TL.Text -> vars -> LogMessage
-warnMessage fmt vars = LogMessage LevelWarn [] undefined fmt vars []
+warnMessage fmt vars = LogMessage warn_level [] undefined fmt vars []
 
 -- | Log debug message.
 -- Note: this message will not contain source information.

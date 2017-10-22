@@ -142,20 +142,6 @@ instance IsLogBackend SyslogBackend where
         BSU.unsafeUseAsCStringLen (fromLogStr str) $
             Syslog.syslog (Just facility) (levelToPriority $ lmLevel msg)
 
-      where
-        levelToPriority :: LogLevel -> Syslog.Priority
-        levelToPriority LevelDebug = Syslog.Debug
-        levelToPriority LevelInfo  = Syslog.Info
-        levelToPriority LevelWarn  = Syslog.Warning
-        levelToPriority LevelError = Syslog.Error
-        levelToPriority (LevelOther level) =
-            case level of
-                "Emergency" -> Syslog.Emergency
-                "Alert"     -> Syslog.Alert
-                "Critical"  -> Syslog.Critical
-                "Notice"    -> Syslog.Notice
-                _ -> error $ "unknown log level: " ++ T.unpack level
-
 -- | Logging backend which writes all messages to the @Chan@
 data ChanLoggerBackend = ChanLoggerBackend {
        clChan :: Chan LogMessage  -- ^ @Chan@ where write messages to
