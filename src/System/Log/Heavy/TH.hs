@@ -5,7 +5,7 @@
 module System.Log.Heavy.TH
   (putMessage,
    trace, debug, info, warning, reportError, fatal,
-   here
+   here, thisModule
   ) where
 
 import Control.Monad.Logger (liftLoc)
@@ -43,6 +43,13 @@ putMessage level = [| \msg vars -> do
 -- Can be useful to construct @LogMessage@ structures 'by hand'.
 here :: Q Exp
 here = qLocation >>= liftLoc
+
+-- | TH macro to obtain current module name in form of @LogSource@.
+-- Can be useful to construct @LogMessage@ structures 'by hand'.
+thisModule :: Q Exp
+thisModule = do
+  loc <- qLocation
+  lift $ splitDots (loc_module loc)
 
 -- | TH macro to log a message with TRACE level. Usage:
 --

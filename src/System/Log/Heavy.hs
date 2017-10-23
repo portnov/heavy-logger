@@ -1,4 +1,4 @@
-{-# LANGUAGE OverloadedStrings, TypeSynonymInstances, FlexibleInstances, ExistentialQuantification, TypeFamilies, GeneralizedNewtypeDeriving, StandaloneDeriving, MultiParamTypeClasses, UndecidableInstances, FlexibleContexts, Rank2Types #-}
+{-# LANGUAGE OverloadedStrings, TypeSynonymInstances, FlexibleInstances, ExistentialQuantification, TypeFamilies, GeneralizedNewtypeDeriving, StandaloneDeriving, MultiParamTypeClasses, UndecidableInstances, FlexibleContexts, Rank2Types, ScopedTypeVariables #-}
 
 -- | This is the main module of @heavy-logger@ package. In most cases, you need to import only this module.
 -- All generally required modules are re-exported.
@@ -31,7 +31,8 @@ module System.Log.Heavy
     module System.Log.Heavy.Types,
     module System.Log.Heavy.Level,
     module System.Log.Heavy.Backends,
-    withLogging, withLoggingF, withLoggingT
+    withLogging, withLoggingF, withLoggingT,
+    isLevelEnabledByBackend, isLevelEnabled,
   ) where
 
 import Control.Monad.Trans
@@ -77,5 +78,31 @@ withLoggingT :: (MonadBaseControl IO m, MonadIO m)
 withLoggingT (LoggingSettings settings) actions =
   withLoggingB settings $ \backend ->
       let logger = makeLogger backend
-      in  runLoggingT actions $ LoggingTState logger []
+      in  runLoggingT actions $ LoggingTState logger (AnyLogBackend backend) []
+
+-- | Check if logging of events of specified level from specified source
+-- is enabled by backend.
+--
+-- This function assumes that if some events filtering is enabled by the
+-- backend, it does not depend on message text, only on source and 
+-- severity level.
+isLevelEnabledByBackend :: forall m. (Monad m, HasLogBackend AnyLogBackend m) => LogSource -> Level -> m Bool
+isLevelEnabledByBackend src level = do
+  backend <- getLogBackend :: m AnyLogBackend
+  let msg = LogMessage level src undefined TL.empty () []
+  return $ wouldWriteMessage backend msg
+
+-- | Check if logging of events of specified level from specified source
+-- is enabled by both context and backend filter.
+--
+-- This function assumes that if some events filtering is enabled by the
+-- backend, it does not depend on message text, only on source and 
+-- severity level.
+isLevelEnabled :: forall m. (Monad m, HasLogBackend AnyLogBackend m, HasLogContext m) => LogSource -> Level -> m Bool
+isLevelEnabled src level = do
+  let msg = LogMessage level src undefined TL.empty () []
+  backend <- getLogBackend :: m AnyLogBackend
+  let isEnabledByBackend = wouldWriteMessage backend msg
+  isEnabledByContext <- checkContextFilterM msg
+  return $ isEnabledByContext && isEnabledByBackend
 

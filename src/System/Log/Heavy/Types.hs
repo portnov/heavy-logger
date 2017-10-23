@@ -104,6 +104,11 @@ class IsLogBackend b where
   -- | Initialize logging backend from settings
   initLogBackend :: LogBackendSettings b -> IO b
 
+  -- | Should return True if the specified message would be
+  -- actually written to the log.
+  wouldWriteMessage :: b -> LogMessage -> Bool
+  wouldWriteMessage _ _ = True
+
   -- | Cleanup logging backend (release resources and so on)
   cleanupLogBackend :: b -> IO ()
 
@@ -119,6 +124,20 @@ class IsLogBackend b where
 
 -- | Container data type for representing arbitrary logging backend.
 data AnyLogBackend = forall b. IsLogBackend b => AnyLogBackend b
+
+instance IsLogBackend AnyLogBackend where
+  data LogBackendSettings AnyLogBackend =
+    AnyLogBackendSettings LoggingSettings
+
+  makeLogger (AnyLogBackend backend) = makeLogger backend
+
+  wouldWriteMessage (AnyLogBackend backend) msg =
+    wouldWriteMessage backend msg
+
+  initLogBackend (AnyLogBackendSettings (LoggingSettings settings)) =
+    AnyLogBackend `fmap` initLogBackend settings
+
+  cleanupLogBackend (AnyLogBackend backend) = cleanupLogBackend backend
 
 -- | Constraint for monads in which it is possible to obtain logging backend.
 class IsLogBackend b => HasLogBackend b m where
@@ -136,6 +155,7 @@ data LoggingSettings = forall b. IsLogBackend b => LoggingSettings (LogBackendSe
 -- | State of @LoggingT@ monad
 data LoggingTState = LoggingTState {
     ltsLogger :: SpecializedLogger
+  , ltsBackend :: AnyLogBackend
   , ltsContext :: LogContext
   }
 
@@ -148,9 +168,6 @@ newtype LoggingT m a = LoggingT {
   deriving (Functor, Applicative, Monad, MonadReader LoggingTState, MonadTrans)
 
 deriving instance MonadIO m => MonadIO (LoggingT m)
-
--- instance (Monad m, IsLogBackend backend) => HasLogBackend backend m where
---   getLogBackend = ask
 
 instance MonadIO m => MonadBase IO (LoggingT m) where
   liftBase = liftIO
@@ -209,6 +226,15 @@ instance (Monad m) => HasLogContext (LoggingT m) where
 
   withLogContext frame actions =
     LoggingT $ ReaderT $ \lts -> runReaderT (runLoggingT_ actions) $ lts {ltsContext = frame: ltsContext lts}
+
+instance Monad m => HasLogBackend AnyLogBackend (LoggingT m) where
+  getLogBackend = asks ltsBackend
+
+-- GHC will not be able to select instance for LoggingT.
+-- instance (Monad m, HasLogBackend b m) => HasLogBackend AnyLogBackend m where
+--   getLogBackend = do
+--     backend <- getLogBackend :: m b
+--     return $ AnyLogBackend backend
 
 -- | Convinience constraint synonym.
 type HasLogging m = (HasLogger m, HasLogContext m)

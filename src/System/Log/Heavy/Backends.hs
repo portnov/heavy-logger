@@ -164,6 +164,9 @@ data ParallelBackend = ParallelBackend ![AnyLogBackend]
 instance IsLogBackend ParallelBackend where
   data LogBackendSettings ParallelBackend = ParallelLogSettings [LoggingSettings]
 
+  wouldWriteMessage (ParallelBackend list) msg =
+    or [wouldWriteMessage backend msg | backend <- list]
+
   makeLogger (ParallelBackend list) msg =
     forM_ list $ \(AnyLogBackend backend) -> makeLogger backend msg
 
@@ -187,6 +190,8 @@ filtering fltr b = Filtering (checkLogLevel fltr) b
 
 instance IsLogBackend b => IsLogBackend (Filtering b) where
   data LogBackendSettings (Filtering b) = Filtering (LogMessage -> Bool) (LogBackendSettings b)
+
+  wouldWriteMessage (FilteringBackend fltr _) msg = fltr msg
 
   makeLogger (FilteringBackend fltr backend) msg = do
     when (fltr msg) $ do
