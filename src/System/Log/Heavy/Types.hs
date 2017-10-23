@@ -7,7 +7,7 @@ module System.Log.Heavy.Types
     LogSource, LogMessage (..), LogFilter, LogContextFrame (..), LogContext,
     IsLogBackend (..), LogBackendSettings (..), LoggingSettings (..),
     AnyLogBackend (..), LogContextFilter (..),
-    include, exclude,
+    include, exclude, noChange,
     Logger,SpecializedLogger, 
     HasLogBackend (..), HasLogContext (..), HasLogging,
     HasLogger (..),
