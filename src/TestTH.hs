@@ -13,7 +13,7 @@ import Data.Text.Format.Heavy
 import qualified Data.Text.Format.Heavy.Parse as PF
 
 logFormat :: Format
-logFormat = PF.parseFormat' "{time} [{level}] {appname} {location}: {message}\n"
+logFormat = PF.parseFormat' "{time} [{level}] {appname} ({file} +{line}): {message}\n"
 
 selectBackend :: String -> LoggingSettings
 selectBackend "syslog" = LoggingSettings $ defaultSyslogSettings {ssFormat = logFormat}
@@ -34,8 +34,4 @@ main = do
       name <- liftIO $ getLine
       $info "name was {}" (Single name)
       liftIO $ putStrLn $ "Hello, " ++ name
-
-
-
-
 

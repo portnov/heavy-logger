@@ -8,7 +8,13 @@
 --
 -- * source - message source (module name)
 --
--- * location - location from where message was logged (line in source file)
+-- * location - location from where message was logged (in form of @(line, column)@).
+--
+-- * line - source file line number from where message was logged.
+--
+-- * file - source file name from where message was logged.
+--
+-- * package - name of the package from where message was logged.
 --
 -- * time - message time
 --
@@ -25,7 +31,7 @@ module System.Log.Heavy.Format
 
 import Control.Applicative
 import Control.Monad
-import Control.Monad.Logger (MonadLogger (..), LogLevel (..))
+import Control.Monad.Logger (MonadLogger (..), LogLevel (..), Loc (..))
 import Data.List (intersperse, intercalate)
 import Data.String
 import Data.Char
@@ -54,7 +60,10 @@ instance F.VarContainer LogMessageWithTime where
       stdVariables :: [(TL.Text, F.Variable)]
       stdVariables = [("level", F.Variable $ F.Shown lmLevel),
                       ("source", F.Variable $ intercalate "." lmSource),
-                      ("location", F.Variable $ show lmLocation),
+                      ("location", F.Variable $ show $ loc_start lmLocation),
+                      ("line", F.Variable $ fst $ loc_start lmLocation),
+                      ("file", F.Variable $ loc_filename lmLocation),
+                      ("package", F.Variable $ loc_package lmLocation),
                       ("time", F.Variable ftime),
                       ("message", F.Variable formattedMessage),
                       ("fullcontext", F.Variable fullContext)]
