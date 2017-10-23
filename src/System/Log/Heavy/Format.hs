@@ -14,6 +14,10 @@
 --
 -- * message - message string itself
 --
+-- * fullcontext - full set of current context variable values, in @name=value; name=value;@ form.
+--
+-- * Also all variables from context are available.
+--
 module System.Log.Heavy.Format
   ( defaultLogFormat,
     formatLogMessage
@@ -32,7 +36,6 @@ import qualified Data.Text as T
 import qualified Data.Text.Lazy as TL
 import qualified Data.Text.Lazy.Builder as Builder
 import qualified Data.ByteString as B
--- import Data.Attoparsec.ByteString
 import System.Log.FastLogger
 import qualified Data.Text.Format.Heavy as F
 import qualified Data.Text.Format.Heavy.Parse as PF
