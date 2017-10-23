@@ -3,7 +3,7 @@ version:             0.3.0.0
 synopsis:            Full-weight logging based on fast-logger
 description:         This is Haskell logging library, which prefers functionality and extendability
                      over light weight and simplicity. It can use fast-logger as backend, and is compatible 
-                     with monad-logger interface, so it can be used in WAI projects.
+                     with monad-logger interface, so it can be used in projects that already use monad-logger.
                      heavy-logger is also integrated with text-format-heavy string formatting library.
 license:             BSD3
 license-file:        LICENSE

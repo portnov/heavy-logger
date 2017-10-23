@@ -47,6 +47,9 @@ This package is mostly writen with ideas of "open architecture". It exposes all
 internal logical pieces, so they can be combined in other order in specific
 applications.
 
+Please refer to Haddock documentation and examples in the `examples/` directory
+for more detailed information.
+
 [1]: https://hackage.haskell.org/package/fast-logger
 [2]: https://hackage.haskell.org/package/monad-logger
 [3]: https://hackage.haskell.org/package/text-format-heavy

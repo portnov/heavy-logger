@@ -214,7 +214,14 @@ checkLogLevel fltr m =
       | x `isPrefixOf` src && length x > length best = go x src xs
       | otherwise = go best src xs
 
--- | Check if message filter matches filters from logging context
+-- | Check if message filter matches filters from logging context.
+--
+-- The message is passed if:
+--
+-- * No @include@ filters are defined in context stack, OR the message conforms to ANY of @include@ filters;
+--
+-- * AND the message does not conform to any of @exclude@ filters in the stack.
+--
 checkContextFilter :: LogContext -> LogMessage -> Bool
 checkContextFilter context msg =
   let includeFilters = [fltr | LogContextFilter (Just fltr) _ <- map lcfFilter context]
@@ -223,13 +230,17 @@ checkContextFilter context msg =
       excludeOk = or [checkLogLevel fltr msg | fltr <- excludeFilters]
   in  includeOk && not excludeOk
 
--- | Check if message filter matches filters from logging context
+-- | Check if message filter matches filters from logging context.
+-- This function is similar to @checkContextFilter@, but uses current context
+-- from monadic state.
 checkContextFilterM :: HasLogContext m => LogMessage -> m Bool
 checkContextFilterM msg = do
   context <- getLogContext
   return $ checkContextFilter context msg
 
--- | Log a message
+-- | Log a message. This will add current context to context specified
+-- in the message.
+-- This function checks current context filter.
 logMessage :: forall m. (HasLogging m, MonadIO m) => LogMessage -> m ()
 logMessage msg = do
   ok <- checkContextFilterM msg
