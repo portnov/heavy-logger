@@ -72,15 +72,23 @@ data LogContextFrame = LogContextFrame {
 
 -- | Events filter for specific logging context.
 data LogContextFilter =
-    NoChange          -- ^ Do not affect messages filtering
-  | SetFilter {setInclude :: Maybe LogFilter, setExclude :: Maybe LogFilter}
+  LogContextFilter {
+      setInclude :: Maybe LogFilter  -- ^ Positive filter (include specified messages)
+    , setExclude :: Maybe LogFilter  -- ^ Negative filter (exclude specified messages)
+  }
   deriving (Eq, Show)
 
-include :: LogFilter -> LogContextFilter
-include f = SetFilter (Just f) Nothing
+-- | Do not affect context filter settings
+noChange :: LogContextFilter
+noChange = LogContextFilter Nothing Nothing
 
+-- | Create filter which includes only specified messages
+include :: LogFilter -> LogContextFilter
+include f = LogContextFilter (Just f) Nothing
+
+-- | Create filter which just excludes specified messages
 exclude :: LogFilter -> LogContextFilter
-exclude f = SetFilter Nothing (Just f)
+exclude f = LogContextFilter Nothing (Just f)
 
 -- | Logging context stack
 type LogContext = [LogContextFrame]
@@ -213,7 +221,7 @@ withLogVariable :: (HasLogContext m, F.Formatable v)
                 -> m a     -- ^ Actions to execute within context frame
                 -> m a
 withLogVariable name value =
-  withLogContext (LogContextFrame [(name, F.Variable value)] NoChange)
+  withLogContext (LogContextFrame [(name, F.Variable value)] noChange)
 
 -- | Compatibility instance.
 instance (Monad m, MonadIO m, HasLogging m) => MonadLogger m where
