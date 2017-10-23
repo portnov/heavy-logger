@@ -1,4 +1,4 @@
-{-# LANGUAGE OverloadedStrings, TypeSynonymInstances, FlexibleInstances, ExistentialQuantification, TypeFamilies, GeneralizedNewtypeDeriving, StandaloneDeriving, FlexibleContexts #-}
+{-# LANGUAGE OverloadedStrings, TypeSynonymInstances, FlexibleInstances, ExistentialQuantification, TypeFamilies, GeneralizedNewtypeDeriving, StandaloneDeriving, FlexibleContexts, TemplateHaskell #-}
 
 import Control.Monad.Trans
 import Control.Monad.Reader
@@ -7,13 +7,13 @@ import System.Environment
 import System.IO
 import qualified System.Posix.Syslog as Syslog
 import System.Log.Heavy
-import System.Log.Heavy.Shortcuts
+import System.Log.Heavy.TH
 import System.Log.FastLogger
 import Data.Text.Format.Heavy
 import qualified Data.Text.Format.Heavy.Parse as PF
 
 logFormat :: Format
-logFormat = PF.parseFormat' "{time} [{level}] {appname} {source}: {message}\n"
+logFormat = PF.parseFormat' "{time} [{level}] {appname} {location}: {message}\n"
 
 selectBackend :: String -> LoggingSettings
 selectBackend "syslog" = LoggingSettings $ defaultSyslogSettings {ssFormat = logFormat}
@@ -32,8 +32,9 @@ main = do
       liftIO $ putStr "Your name? "
       liftIO $ hFlush stdout
       name <- liftIO $ getLine
-      info "name was {}" (Single name)
+      $info "name was {}" (Single name)
       liftIO $ putStrLn $ "Hello, " ++ name
+
 
 
 
