@@ -36,7 +36,6 @@ module System.Log.Heavy
 
 import Control.Monad.Trans
 import Control.Monad.Trans.Control
-import Control.Monad.Logger (LogLevel (..))
 import Control.Exception.Lifted (bracket)
 import qualified Data.Text.Lazy as TL
 import qualified Data.Text.Format.Heavy as F

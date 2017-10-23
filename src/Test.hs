@@ -28,7 +28,7 @@ main = do
   [bstr] <- getArgs
   let settings = selectBackend bstr
   let contextVariables = [("appname", Variable ("hello world" :: String))]
-  withLoggingT settings $ withLogContext (LogContextFrame contextVariables (Include defaultLogFilter)) $ do
+  withLoggingT settings $ withLogContext (LogContextFrame contextVariables (include defaultLogFilter)) $ do
       liftIO $ putStr "Your name? "
       liftIO $ hFlush stdout
       name <- liftIO $ getLine
