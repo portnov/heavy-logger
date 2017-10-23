@@ -72,9 +72,14 @@ data LogContextFrame = LogContextFrame {
 -- | Events filter for specific logging context.
 data LogContextFilter =
     NoChange          -- ^ Do not affect messages filtering
-  | Include LogFilter -- ^ Allow messages by specific filter
-  | Exclude LogFilter -- ^ Disallow messages by specific filter
+  | SetFilter {setInclude :: Maybe LogFilter, setExclude :: Maybe LogFilter}
   deriving (Eq, Show)
+
+include :: LogFilter -> LogContextFilter
+include f = SetFilter (Just f) Nothing
+
+exclude :: LogFilter -> LogContextFilter
+exclude f = SetFilter Nothing (Just f)
 
 -- | Logging context stack
 type LogContext = [LogContextFrame]

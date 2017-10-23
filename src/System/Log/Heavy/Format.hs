@@ -4,7 +4,17 @@
 --
 -- Log message format is defined by using @text-format-heavy@ syntax. Variables available are:
 --
--- * level - message severity level
+-- * level - message severity level. Variable format can be specified in form of
+--   @selector[~convert]@, where:
+--
+--     * @selector@ is @name@ for level name, @value@ for level integer value,
+--       @syslog@ for name of syslog equivalent of the level.
+--
+--     * @convert@ is @u@ for upper case, @l@ for lower case, @t@ for title case
+--       (all words capitalized).
+--   
+--     Default format corresponds to @name@. For example, use @{level:~l}@ to
+--     output level name in lower case.
 --
 -- * source - message source (module name)
 --
