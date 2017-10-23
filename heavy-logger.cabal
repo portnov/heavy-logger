@@ -30,6 +30,7 @@ library
                        mtl >= 2.2.1,
                        containers >= 0.5,
                        transformers-base >= 0.4.4,
+                       data-default >= 0.7,
                        monad-control >= 1.0.1.0,
                        lifted-base >= 0.2.3,
                        template-haskell >= 2.10.0,
@@ -41,7 +42,7 @@ library
                        fast-logger >= 2.4.10,
                        monad-logger >= 0.3.22,
                        hsyslog >= 5,
-                       text-format-heavy >= 0.1.2.0
+                       text-format-heavy >= 0.1.5.0
   hs-source-dirs:      src
   default-language:    Haskell2010
 
