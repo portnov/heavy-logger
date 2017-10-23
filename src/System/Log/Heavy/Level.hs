@@ -8,7 +8,7 @@ module System.Log.Heavy.Level
    levelToLogLevel, logLevelToLevel,
    parseLevel,
    -- * Standard severity levels
-   debug_level, info_level, warn_level, error_level, fatal_level,
+   trace_level, debug_level, info_level, warn_level, error_level, fatal_level,
    disable_logging
   ) where
 
