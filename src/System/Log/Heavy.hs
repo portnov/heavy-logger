@@ -1,14 +1,17 @@
 {-# LANGUAGE OverloadedStrings, TypeSynonymInstances, FlexibleInstances, ExistentialQuantification, TypeFamilies, GeneralizedNewtypeDeriving, StandaloneDeriving, MultiParamTypeClasses, UndecidableInstances, FlexibleContexts, Rank2Types #-}
 
--- | This is the main module of @heavy-logger@ package. You usually need to import only this module.
+-- | This is the main module of @heavy-logger@ package. In most cases, you need to import only this module.
 -- All generally required modules are re-exported.
 --
 -- For simple usage cases, you may also want to import System.Log.Heavy.Shortcuts module.
+--
+-- For some cases, you will want to import System.Log.Heavy.TH module.
 --
 -- Example of usage is:
 --
 -- @
 --  import System.Log.Heavy
+--  import System.Log.Heavy.Shortcuts
 --  import Data.Text.Format.Heavy
 --  ...
 --

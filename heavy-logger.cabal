@@ -23,6 +23,7 @@ library
                        System.Log.Heavy.Format
                        System.Log.Heavy.Backends
                        System.Log.Heavy.Shortcuts
+                       System.Log.Heavy.TH
   -- other-modules:       
   -- other-extensions:    
   build-depends:       base >=4.8 && <5.0,
@@ -32,6 +33,8 @@ library
                        monad-control >= 1.0.1.0,
                        lifted-base >= 0.2.3,
                        template-haskell >= 2.10.0,
+                       th-lift >= 0.7,
+                       th-lift-instances >= 0.1,
                        bytestring >= 0.10.6,
                        text >= 1.2.2.1,
                        attoparsec >= 0.13.1.0,
