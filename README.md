@@ -4,8 +4,8 @@ heavy-logger README
 This is Haskell logging library, which prefers functionality and extendability
 over light weight and simplicity.
 It can use [fast-logger][1] as backend and is compatible with [monad-logger][2]
-interface, so it can be used in [WAI][3] projects.
-heavy-logger is integrated with [text-format-heavy][4] string formatting library.
+interface, so it can be used in projects that already use monad-logger.
+heavy-logger is integrated with [text-format-heavy][3] string formatting library.
 
 Most notable features of heavy-logger are:
 
@@ -17,6 +17,8 @@ Most notable features of heavy-logger are:
   * Chan backend. Writes messages to a Chan, so they can be read from the other
     side.
 * Possiblity to write messages to several backends in parallel.
+* Sane default set of logging message severity levels and possibility to define
+  custom severity levels.
 * Logging context stacks support (aka mapped diagnostic contexts, MDC). Each
   logging context stack frame contains a set of named variables. These
   variables can be writen to the log.
@@ -47,5 +49,4 @@ applications.
 
 [1]: https://hackage.haskell.org/package/fast-logger
 [2]: https://hackage.haskell.org/package/monad-logger
-[3]: https://hackage.haskell.org/package/wai
-[4]: https://hackage.haskell.org/package/text-format-heavy
+[3]: https://hackage.haskell.org/package/text-format-heavy
