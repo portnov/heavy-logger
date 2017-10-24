@@ -32,6 +32,7 @@ module System.Log.Heavy
     -- * Reexports
     module System.Log.Heavy.Types,
     module System.Log.Heavy.Level,
+    module System.Log.Heavy.LoggingT,
     module System.Log.Heavy.Backends,
     withLogging, withLoggingF, withLoggingT,
     isLevelEnabledByBackend, isLevelEnabled,
@@ -45,6 +46,7 @@ import qualified Data.Text.Format.Heavy as F
 
 import System.Log.Heavy.Types
 import System.Log.Heavy.Level
+import System.Log.Heavy.LoggingT
 import System.Log.Heavy.Backends
 
 -- | Execute actions with logging backend.

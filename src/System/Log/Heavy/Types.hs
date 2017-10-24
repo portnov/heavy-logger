@@ -11,10 +11,8 @@ module System.Log.Heavy.Types
     Logger,SpecializedLogger, 
     HasLogBackend (..), HasLogContext (..), HasLogging,
     HasLogger (..),
-    LoggingT (LoggingT), LoggingTState (..),
     -- * Main functions
     logMessage',
-    runLoggingT,
     applyBackend,
     defaultLogFilter,
     withLogVariable,
@@ -24,7 +22,6 @@ module System.Log.Heavy.Types
 
 import Control.Monad.Reader
 import Control.Monad.Logger (MonadLogger (..), LogLevel (..))
-import Control.Monad.Base
 import Control.Monad.Trans.Control
 import Control.Exception.Lifted (bracket)
 import Data.String
@@ -163,40 +160,6 @@ class IsLogBackend b => HasLogBackend b m where
 -- @
 data LoggingSettings = forall b. IsLogBackend b => LoggingSettings (LogBackendSettings b)
 
--- | State of @LoggingT@ monad
-data LoggingTState = LoggingTState {
-    ltsLogger :: SpecializedLogger
-  , ltsBackend :: AnyLogBackend
-  , ltsContext :: LogContext
-  }
-
--- | Logging monad transformer.
--- This is just a default implementation of @HasLogging@ interface.
--- Applications are free to use this or another implementation.
-newtype LoggingT m a = LoggingT {
-    runLoggingT_ :: ReaderT LoggingTState m a
-  }
-  deriving (Functor, Applicative, Monad, MonadReader LoggingTState, MonadTrans)
-
-deriving instance MonadIO m => MonadIO (LoggingT m)
-
-instance MonadIO m => MonadBase IO (LoggingT m) where
-  liftBase = liftIO
-
-instance MonadTransControl LoggingT where
-    type StT LoggingT a = StT (ReaderT LoggingTState) a
-    liftWith = defaultLiftWith LoggingT runLoggingT_
-    restoreT = defaultRestoreT LoggingT
-
-instance (MonadBaseControl IO m, MonadIO m) => MonadBaseControl IO (LoggingT m) where
-    type StM (LoggingT m) a = ComposeSt LoggingT m a
-    liftBaseWith     = defaultLiftBaseWith
-    restoreM         = defaultRestoreM
-
--- | Run logging monad
-runLoggingT :: LoggingT m a -> LoggingTState -> m a
-runLoggingT actions context = runReaderT (runLoggingT_ actions) context
-
 -- | Logging function
 type Logger backend = backend -> LogMessage -> IO ()
 
@@ -214,10 +177,6 @@ class Monad m => HasLogger m where
 --   getLogger = ask
 --   localLogger l = local (const l)
 
-instance Monad m => HasLogger (LoggingT m) where
-  getLogger = asks ltsLogger
-  localLogger l actions = LoggingT $ ReaderT $ \lts -> runReaderT (runLoggingT_ actions) $ lts {ltsLogger = l}
-
 -- | Apply logging backend locally.
 applyBackend :: (IsLogBackend b, HasLogger m) => b -> m a -> m a
 applyBackend b actions = do
@@ -231,15 +190,6 @@ class Monad m => HasLogContext m where
 
   -- | Obtain currently active logging context stack
   getLogContext :: m LogContext
-
-instance (Monad m) => HasLogContext (LoggingT m) where
-  getLogContext = asks ltsContext
-
-  withLogContext frame actions =
-    LoggingT $ ReaderT $ \lts -> runReaderT (runLoggingT_ actions) $ lts {ltsContext = frame: ltsContext lts}
-
-instance Monad m => HasLogBackend AnyLogBackend (LoggingT m) where
-  getLogBackend = asks ltsBackend
 
 -- GHC will not be able to select instance for LoggingT.
 -- instance (Monad m, HasLogBackend b m) => HasLogBackend AnyLogBackend m where
