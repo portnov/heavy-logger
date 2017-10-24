@@ -28,11 +28,8 @@ module System.Log.Heavy.Backends
 import Control.Monad
 import Control.Monad.Trans (liftIO)
 import Control.Monad.Reader
-import Control.Monad.Logger (MonadLogger (..), LogLevel (..))
 import Control.Concurrent
 import Data.List (isPrefixOf)
-import Data.Maybe
-import qualified Data.Text as T
 import qualified Data.ByteString.Unsafe as BSU
 import qualified Data.Text.Format.Heavy as F
 import qualified System.Posix.Syslog as Syslog

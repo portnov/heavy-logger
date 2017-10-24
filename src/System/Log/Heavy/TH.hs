@@ -12,7 +12,7 @@ import Control.Monad.Logger (liftLoc)
 -- import Language.Haskell.TH
 import Language.Haskell.TH.Syntax hiding (reportError)
 import Language.Haskell.TH.Lift
-import Instances.TH.Lift
+import Instances.TH.Lift () -- import instances only
 import qualified System.Posix.Syslog as Syslog
 
 import System.Log.Heavy.Types

@@ -21,10 +21,9 @@ module System.Log.Heavy.Types
   ) where
 
 import Control.Monad.Reader
-import Control.Monad.Logger (MonadLogger (..), LogLevel (..))
+import Control.Monad.Logger (MonadLogger (..))
 import Control.Monad.Trans.Control
 import Control.Exception.Lifted (bracket)
-import Data.String
 import Language.Haskell.TH
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as TE

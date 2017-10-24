@@ -10,7 +10,6 @@ module System.Log.Heavy.Shortcuts
   ) where
 
 import Control.Monad.Trans
-import Control.Monad.Reader
 import qualified Data.Text.Lazy as TL
 import qualified Data.Text.Format.Heavy as F
 

@@ -42,7 +42,6 @@ import Control.Monad.Trans
 import Control.Monad.Trans.Control
 import Control.Exception.Lifted (bracket)
 import qualified Data.Text.Lazy as TL
-import qualified Data.Text.Format.Heavy as F
 
 import System.Log.Heavy.Types
 import System.Log.Heavy.Level

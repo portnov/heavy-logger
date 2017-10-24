@@ -13,7 +13,6 @@ import Control.Monad.Base
 import Control.Monad.Trans.Control
 
 import System.Log.Heavy.Types
-import System.Log.Heavy.Level
 
 -- | State of @LoggingT@ monad
 data LoggingTState = LoggingTState {

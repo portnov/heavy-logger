@@ -41,25 +41,21 @@ module System.Log.Heavy.Format
 
 import Control.Applicative
 import Control.Monad
-import Control.Monad.Logger (MonadLogger (..), LogLevel (..), Loc (..))
-import Data.List (intersperse, intercalate)
-import Data.String
-import Data.Char
+import Data.List (intercalate)
 import Data.Maybe
 import Data.Monoid
 import Data.Default
 import qualified Data.Map as M
-import qualified Data.Text as T
 import qualified Data.Text.Lazy as TL
 import qualified Data.Text.Lazy.Builder as Builder
 import qualified Data.Text.Lazy.Builder.Int as Builder
-import qualified Data.ByteString as B
 import System.Log.FastLogger
 import qualified Data.Text.Format.Heavy as F
 import qualified Data.Text.Format.Heavy.Parse as PF
 import Data.Text.Format.Heavy.Formats (Conversion (..))
 import Data.Text.Format.Heavy.Build (convertText)
 import Data.Attoparsec.Text
+import Language.Haskell.TH.Syntax (Loc (..))
 import Prelude hiding (takeWhile)
 
 import System.Log.Heavy.Types
