@@ -14,6 +14,7 @@ selectBackend :: String -> LoggingSettings
 selectBackend "syslog" = LoggingSettings $ defaultSyslogSettings {ssFormat = logFormat}
 selectBackend "stderr" = LoggingSettings $ defStderrSettings {lsFormat = logFormat}
 selectBackend "stdout" = LoggingSettings $ defStdoutSettings {lsFormat = logFormat}
+selectBackend "null" = LoggingSettings $ NullLogSettings
 selectBackend "parallel" =
   LoggingSettings $ ParallelLogSettings [LoggingSettings defStderrSettings, LoggingSettings defaultSyslogSettings]
 selectBackend path = LoggingSettings $ defFileSettings path

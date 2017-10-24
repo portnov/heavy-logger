@@ -1,5 +1,7 @@
 {-# LANGUAGE OverloadedStrings, TypeSynonymInstances, FlexibleInstances, ExistentialQuantification, TypeFamilies, GeneralizedNewtypeDeriving, StandaloneDeriving, MultiParamTypeClasses, UndecidableInstances #-}
-
+-- | This module contains implementation of most commonly used logging backends.
+-- You can write your own backends, by implementing an instance of @IsLogBackend@
+-- type class.
 module System.Log.Heavy.Backends
   (
   -- $description
@@ -8,6 +10,7 @@ module System.Log.Heavy.Backends
   SyslogBackend,
   ChanLoggerBackend,
   ParallelBackend,
+  NullBackend,
   Filtering, filtering, excluding,
   LogBackendSettings (..),
   -- * Default settings
@@ -210,6 +213,22 @@ instance IsLogBackend b => IsLogBackend (Filtering b) where
     return $ FilteringBackend fltr backend
 
   cleanupLogBackend (FilteringBackend _ b) = cleanupLogBackend b
+
+-- | Null logging backend, which discards all messages
+-- (passes them to @/dev/null@, if you wish).
+-- This can be used to disable logging.
+data NullBackend = NullBackend
+
+instance IsLogBackend NullBackend where
+  data LogBackendSettings NullBackend = NullLogSettings
+
+  wouldWriteMessage _ _ = False
+
+  makeLogger _ _ = return ()
+
+  initLogBackend _ = return NullBackend
+
+  cleanupLogBackend _ = return ()
 
 -- | Check if message level matches given filter.
 checkLogLevel :: LogFilter -> LogMessage -> Bool

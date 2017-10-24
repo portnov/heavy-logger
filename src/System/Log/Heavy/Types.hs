@@ -41,7 +41,16 @@ import System.Log.Heavy.Level
 -- for example @[\"System\", \"Log\", \"Heavy\", \"Types\"]@.
 type LogSource = [String]
 
--- | Log message structure
+-- | Log message structure. You usually will want to use some sort
+-- of shortcut function to create messages. There are some provided
+-- by this package:
+--
+-- * @System.Log.Heavy.Shortcuts@ module exports simple functions, that can be used
+--   in simple cases, when you do not want to write or check message source.
+--
+-- * @System.Log.Heavy.TH@ module exports TH macros, which correctly fill message
+--   source and location.
+--
 data LogMessage = forall vars. F.VarContainer vars => LogMessage {
     lmLevel :: Level    -- ^ Log message level
   , lmSource :: LogSource  -- ^ Log message source (module)
@@ -105,14 +114,16 @@ class IsLogBackend b where
   initLogBackend :: LogBackendSettings b -> IO b
 
   -- | Should return True if the specified message would be
-  -- actually written to the log.
+  -- actually written to the log. Default implementation 
+  -- always returns True.
   wouldWriteMessage :: b -> LogMessage -> Bool
   wouldWriteMessage _ _ = True
 
   -- | Cleanup logging backend (release resources and so on)
   cleanupLogBackend :: b -> IO ()
 
-  -- | Bracket function
+  -- | Bracket function. Concrete implementations usually
+  -- do not have to override default implementation.
   withLoggingB :: (MonadBaseControl IO m, MonadIO m)
             => LogBackendSettings b
             -> (b -> m a)
