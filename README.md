@@ -62,7 +62,7 @@ There are, in general, following ways to use this package:
   automatically solves all threading-related problems, since in fact it does not
   have any shared state.
 * Use `System.Log.Heavy.IO` module. If you do not have monadic transformers at all,
-  and your applications works in pure IO, this may be the simplest way. However,
+  and your application works in pure IO, this may be the simplest way. However,
   this is a bit fragile, because you have to be sure that you always call logging
   functions only when logging state is initialized, i.e. within `withLoggingIO`
   call. This implementation stores required state in thread-local storage.

@@ -8,7 +8,7 @@ module System.Log.Heavy.Backends
   SyslogBackend,
   ChanLoggerBackend,
   ParallelBackend,
-  Filtering, filtering,
+  Filtering, filtering, excluding,
   LogBackendSettings (..),
   -- * Default settings
   defStdoutSettings,
@@ -17,7 +17,9 @@ module System.Log.Heavy.Backends
   defaultSyslogSettings,
   defaultSyslogFormat,
   -- * Utilities for other backends implementation
-  checkLogLevel, checkContextFilter, checkContextFilterM, logMessage
+  checkLogLevel, checkLogLevel',
+  checkContextFilter, checkContextFilter', checkContextFilterM,
+  logMessage
   ) where
 
 import Control.Monad
@@ -188,6 +190,12 @@ data Filtering b = FilteringBackend (LogMessage -> Bool) b
 filtering :: IsLogBackend b => LogFilter -> LogBackendSettings b -> LogBackendSettings (Filtering b)
 filtering fltr b = Filtering (checkLogLevel fltr) b
 
+-- | Exclude messages by filter.
+excluding :: IsLogBackend b => LogFilter -> LogBackendSettings b -> LogBackendSettings (Filtering b)
+excluding fltr b = Filtering ex b
+  where
+    ex msg = not $ checkContextFilter' [LogContextFilter Nothing (Just fltr)] (lmSource msg) (lmLevel msg)
+
 instance IsLogBackend b => IsLogBackend (Filtering b) where
   data LogBackendSettings (Filtering b) = Filtering (LogMessage -> Bool) (LogBackendSettings b)
 
@@ -206,9 +214,14 @@ instance IsLogBackend b => IsLogBackend (Filtering b) where
 -- | Check if message level matches given filter.
 checkLogLevel :: LogFilter -> LogMessage -> Bool
 checkLogLevel fltr m =
-    case lookup (bestMatch (lmSource m) (map fst fltr)) fltr of
+    checkLogLevel' fltr (lmSource m) (lmLevel m)
+
+-- | Check if message level matches given filter.
+checkLogLevel' :: LogFilter -> LogSource -> Level -> Bool
+checkLogLevel' fltr source level =
+    case lookup (bestMatch source (map fst fltr)) fltr of
       Nothing -> False
-      Just level -> lmLevel m <= level
+      Just min -> level <= min
   where
     bestMatch :: LogSource -> [LogSource] -> LogSource
     bestMatch src list = go [] src list
@@ -219,7 +232,23 @@ checkLogLevel fltr m =
       | x `isPrefixOf` src && length x > length best = go x src xs
       | otherwise = go best src xs
 
--- | Check if message filter matches filters from logging context.
+-- | Check if message source and level passes specified filters.
+--
+-- The message is passed if:
+--
+-- * No @include@ filters are defined in context stack, OR the message conforms to ANY of @include@ filters;
+--
+-- * AND the message does not conform to any of @exclude@ filters in the stack.
+--
+checkContextFilter' :: [LogContextFilter] -> LogSource -> Level -> Bool
+checkContextFilter' filters source level =
+  let includeFilters = [fltr | LogContextFilter (Just fltr) _ <- filters]
+      excludeFilters = [fltr | LogContextFilter _ (Just fltr) <- filters]
+      includeOk = null includeFilters || or [checkLogLevel' fltr source level | fltr <- includeFilters]
+      excludeOk = or [checkLogLevel' fltr source level | fltr <- excludeFilters]
+  in  includeOk && not excludeOk
+
+-- | Check if message matches filters from logging context.
 --
 -- The message is passed if:
 --
@@ -229,13 +258,9 @@ checkLogLevel fltr m =
 --
 checkContextFilter :: LogContext -> LogMessage -> Bool
 checkContextFilter context msg =
-  let includeFilters = [fltr | LogContextFilter (Just fltr) _ <- map lcfFilter context]
-      excludeFilters = [fltr | LogContextFilter _ (Just fltr) <- map lcfFilter context]
-      includeOk = null includeFilters || or [checkLogLevel fltr msg | fltr <- includeFilters]
-      excludeOk = or [checkLogLevel fltr msg | fltr <- excludeFilters]
-  in  includeOk && not excludeOk
+  checkContextFilter' (map lcfFilter context) (lmSource msg) (lmLevel msg)
 
--- | Check if message filter matches filters from logging context.
+-- | Check if message matches filters from logging context.
 -- This function is similar to @checkContextFilter@, but uses current context
 -- from monadic state.
 checkContextFilterM :: HasLogContext m => LogMessage -> m Bool
