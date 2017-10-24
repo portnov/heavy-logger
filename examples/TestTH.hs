@@ -6,10 +6,9 @@ import System.IO
 import System.Log.Heavy
 import System.Log.Heavy.TH
 import Data.Text.Format.Heavy
-import qualified Data.Text.Format.Heavy.Parse as PF
 
 logFormat :: Format
-logFormat = PF.parseFormat' "{time} [{level}] {appname} ({file} +{line}): {message}\n"
+logFormat = "{time} [{level}] {appname} ({file} +{line}): {message}\n"
 
 selectBackend :: String -> LoggingSettings
 selectBackend "syslog" = LoggingSettings $ defaultSyslogSettings {ssFormat = logFormat}
