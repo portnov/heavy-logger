@@ -151,14 +151,16 @@ data ChanLoggerBackend = ChanLoggerBackend {
      }
 
 instance IsLogBackend ChanLoggerBackend where
-  data LogBackendSettings ChanLoggerBackend = ChanLoggerSettings ChanLoggerBackend
+  data LogBackendSettings ChanLoggerBackend =
+    ChanLoggerSettings (Chan LogMessage)
 
-  initLogBackend (ChanLoggerSettings backend) = return backend 
+  initLogBackend (ChanLoggerSettings chan) =
+    return $ ChanLoggerBackend chan
 
   cleanupLogBackend _ = return ()
 
-  makeLogger settings msg = do
-    liftIO $ writeChan (clChan settings) msg
+  makeLogger backend msg = do
+    liftIO $ writeChan (clChan backend) msg
 
 -- | Logging backend that writes log messages to several other backends in parallel.
 data ParallelBackend = ParallelBackend ![AnyLogBackend]
