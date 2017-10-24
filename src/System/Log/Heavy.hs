@@ -7,6 +7,8 @@
 --
 -- For some cases, you will want to import System.Log.Heavy.TH module.
 --
+-- If you want to call logging functions directly from IO monad, you will need System.Log.Heavy.IO module.
+--
 -- Example of usage is:
 --
 -- @

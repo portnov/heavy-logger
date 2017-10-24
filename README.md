@@ -47,9 +47,37 @@ This package is mostly writen with ideas of "open architecture". It exposes all
 internal logical pieces, so they can be combined in other order in specific
 applications.
 
+All functions provided by the package work within any monad, which should be an
+instance of one of type classes defined by package: `HasLogger`, `HasLogBackend`,
+`HasLogContext`. Each function's signature declares only specific constraint, so
+if you do not need all functionality, you can implement instances only of that 
+classes that you actually need.
+
+There are, in general, following ways to use this package:
+
+* Use `LoggingT` monad transformer. It can be the simplest, if you already have
+  monadic transformers stack of 1-2 transformers and you do not mind to add yet
+  another. With `LoggingT`, you do not need to write any adapter instances, since
+  `LoggingT` is already an instance of all required classes. This implementation
+  automatically solves all threading-related problems, since in fact it does not
+  have any shared state.
+* Use `System.Log.Heavy.IO` module. If you do not have monadic transformers at all,
+  and your applications works in pure IO, this may be the simplest way. However,
+  this is a bit fragile, because you have to be sure that you always call logging
+  functions only when logging state is initialized, i.e. within `withLoggingIO`
+  call. This implementation stores required state in thread-local storage.
+* Implement required class instances for monadic stack that you already use in
+  your application. For example, if you already have something like
+  `ReaderT StateT ExceptT IO`, it will be probably better to add a couple of 
+  fields to StateT's state to track logging state, than change your stack to
+  `ReaderT StateT LoggingT ExceptT IO`. If you wish to store logging state in some
+  kind of shared storage (global IORef or whatever), then you should think about
+  thread-safety by yourself.
+
 Please refer to Haddock documentation and examples in the `examples/` directory
 for more detailed information.
 
 [1]: https://hackage.haskell.org/package/fast-logger
 [2]: https://hackage.haskell.org/package/monad-logger
 [3]: https://hackage.haskell.org/package/text-format-heavy
+
