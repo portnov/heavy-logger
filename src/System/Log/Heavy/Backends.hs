@@ -55,6 +55,15 @@ import System.Log.Heavy.Format
 --
 -- * Chan backend.
 --
+-- * Null backend. This discards all messages. Can be used to disable logging.
+--
+-- There are also some backend combinators:
+--
+-- * Filtering - passes messages, that match specified filter,
+--   to underlying backend.
+--
+-- * Parallel - writes messages to several backends in parallel.
+--
 
 -- | Default settings for fast-logger stdout output
 defStdoutSettings :: LogBackendSettings FastLoggerBackend
