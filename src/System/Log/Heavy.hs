@@ -1,13 +1,7 @@
 {-# LANGUAGE OverloadedStrings, TypeSynonymInstances, FlexibleInstances, ExistentialQuantification, TypeFamilies, GeneralizedNewtypeDeriving, StandaloneDeriving, MultiParamTypeClasses, UndecidableInstances, FlexibleContexts, Rank2Types, ScopedTypeVariables #-}
-
--- | This is the main module of @heavy-logger@ package. In most cases, you need to import only this module.
--- All generally required modules are re-exported.
---
--- For simple usage cases, you may also want to import System.Log.Heavy.Shortcuts module.
---
--- For some cases, you will want to import System.Log.Heavy.TH module.
---
--- If you want to call logging functions directly from IO monad, you will need System.Log.Heavy.IO module.
+-- | This is the main module of @heavy-logger@ package. In most cases, you need
+-- to import this module. You will also need other modules in specific cases.
+-- All modules that are required always are re-exported by this module.
 --
 -- Example of usage is:
 --
@@ -25,7 +19,43 @@
 --      liftIO $ putStrLn $ "Hello, " ++ name
 -- @
 --
--- See also @Test.hs@.
+-- Please refer to @examples/@ directory for compiling examples.
+-- 
+-- There are, in general, following ways to use this package:
+-- 
+-- * Use @LoggingT@ monad transformer. It can be the simplest, if you already have
+--   monadic transformers stack of 1-2 transformers and you do not mind to add yet
+--   another. With @LoggingT@, you do not need to write any adapter instances, since
+--   @LoggingT@ is already an instance of all required classes. This implementation
+--   automatically solves all threading-related problems, since in fact it does not
+--   have any shared state.
+--
+-- * Use @System.Log.Heavy.IO@ module. If you do not have monadic transformers at all,
+--   and your application works in pure IO, this may be the simplest way. However,
+--   this is a bit fragile, because you have to be sure that you always call logging
+--   functions only when logging state is initialized, i.e. within @withLoggingIO@
+--   call. This implementation stores required state in thread-local storage.
+--
+-- * Implement required class instances for monadic stack that you already use in
+--   your application. For example, if you already have something like
+--   @ReaderT StateT ExceptT IO@, it will be probably better to add a couple of 
+--   fields to StateT's state to track logging state, than change your stack to
+--   @ReaderT StateT LoggingT ExceptT IO@. If you wish to store logging state in some
+--   kind of shared storage (global IORef or whatever), then you should think about
+--   thread-safety by yourself.
+-- 
+-- When you decided which monadic context you will use, you will call one of
+-- @withLogging*@ functions to run the entire thing, and inside that you will construct
+-- instances of @LogMessage@ type and call @logMessage@ or @logMessage'@ function on them
+-- to actually log a message. You probably will want to use some shortcut functions to
+-- construct @LogMessage@ instances and log them.  There are some provided
+-- by this package:
+--
+-- * @System.Log.Heavy.Shortcuts@ module exports simple functions, that can be used
+--   in simple cases, when you do not want to write or check message source.
+--
+-- * @System.Log.Heavy.TH@ module exports TH macros, which correctly fill message
+--   source and location.
 --
 module System.Log.Heavy
   (

@@ -17,6 +17,8 @@ Most notable features of heavy-logger are:
   * Chan backend. Writes messages to a Chan, so they can be read from the other
     side.
 * Possiblity to write messages to several backends in parallel.
+* Logging backend settings can be defined dynamically; it is not necessary to
+  hardcode which backend you will use, you can load settings in runtime.
 * Sane default set of logging message severity levels and possibility to define
   custom severity levels.
 * Logging context stacks support (aka mapped diagnostic contexts, MDC). Each
