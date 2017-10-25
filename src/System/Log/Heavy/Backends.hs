@@ -65,6 +65,8 @@ import System.Log.Heavy.Format
 --
 -- * Parallel - writes messages to several backends in parallel.
 --
+-- * Dynamic - allows to change underlying backend or its settings in runtime.
+--
 
 -- | Default settings for fast-logger stdout output
 defStdoutSettings :: LogBackendSettings FastLoggerBackend
@@ -239,6 +241,20 @@ instance IsLogBackend NullBackend where
 
   cleanupLogBackend _ = return ()
 
+-- | Dynamic logging backend allows to change logging backend or it's settings
+-- in runtime. When it sees new backend settings, it deinitializes old backend
+-- and initializes new one.
+--
+-- How to use it:
+--
+-- * Before creating @DynamicSettings@, you have to select some initial
+--   @LoggingSettings@ and put them to @MVar@. If you leave the @MVar@ empty,
+--   @DymamicBackend@ will be blocked on reading from @MVar@ until you put
+--   something there.
+-- * When you decide that you want to use new backend settings, put new
+--   @LoggingSettings@ to the same @MVar@. @DynamicBackend@ will use new
+--   settings for the next logging function call.
+--
 data DynamicBackend = DynamicBackend {
     dbCurrentBackend :: MVar AnyLogBackend
   , dbNewSettings :: MVar LoggingSettings
