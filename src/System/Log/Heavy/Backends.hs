@@ -11,6 +11,7 @@ module System.Log.Heavy.Backends
   ChanLoggerBackend,
   ParallelBackend,
   NullBackend,
+  DynamicBackend,
   Filtering, filtering, excluding,
   LogBackendSettings (..),
   -- * Default settings
@@ -237,6 +238,37 @@ instance IsLogBackend NullBackend where
   initLogBackend _ = return NullBackend
 
   cleanupLogBackend _ = return ()
+
+data DynamicBackend = DynamicBackend {
+    dbCurrentBackend :: MVar AnyLogBackend
+  , dbNewSettings :: MVar LoggingSettings
+  }
+
+instance IsLogBackend DynamicBackend where
+  data LogBackendSettings DynamicBackend = DynamicSettings (MVar LoggingSettings)
+
+  initLogBackend (DynamicSettings settingsVar) = do
+    LoggingSettings settings <- takeMVar settingsVar
+    backend <- initLogBackend settings
+    backendVar <- newMVar (AnyLogBackend backend)
+    return $ DynamicBackend backendVar settingsVar
+
+  cleanupLogBackend (DynamicBackend backendVar settingsVar) = do
+    backend <- takeMVar backendVar
+    cleanupLogBackend backend
+
+  makeLogger (DynamicBackend backendVar settingsVar) msg = do
+    mbNewSettings <- tryTakeMVar settingsVar
+    case mbNewSettings of
+      Nothing -> do
+          backend <- readMVar backendVar
+          makeLogger backend msg
+      Just (LoggingSettings newSettings) -> do
+          oldBackend <- takeMVar backendVar
+          cleanupLogBackend oldBackend
+          newBackend <- initLogBackend newSettings
+          putMVar backendVar (AnyLogBackend newBackend)
+          makeLogger newBackend msg
 
 -- | Check if message level matches given filter.
 checkLogLevel :: LogFilter -> LogMessage -> Bool
