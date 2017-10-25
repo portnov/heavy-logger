@@ -13,6 +13,7 @@ module System.Log.Heavy.Backends
   NullBackend,
   DynamicBackend,
   Filtering, filtering, excluding,
+  FilteringM, filteringM, excludingM,
   LogBackendSettings (..),
   -- * Default settings
   defStdoutSettings,
@@ -180,8 +181,9 @@ data ParallelBackend = ParallelBackend ![AnyLogBackend]
 instance IsLogBackend ParallelBackend where
   data LogBackendSettings ParallelBackend = ParallelLogSettings [LoggingSettings]
 
-  wouldWriteMessage (ParallelBackend list) msg =
-    or [wouldWriteMessage backend msg | backend <- list]
+  wouldWriteMessage (ParallelBackend list) msg = do
+    results <- sequence [wouldWriteMessage backend msg | backend <- list]
+    return $ or results
 
   makeLogger (ParallelBackend list) msg =
     forM_ list $ \(AnyLogBackend backend) -> makeLogger backend msg
@@ -213,7 +215,8 @@ excluding fltr b = Filtering ex b
 instance IsLogBackend b => IsLogBackend (Filtering b) where
   data LogBackendSettings (Filtering b) = Filtering (LogMessage -> Bool) (LogBackendSettings b)
 
-  wouldWriteMessage (FilteringBackend fltr _) msg = fltr msg
+  wouldWriteMessage (FilteringBackend fltr _) msg = do
+    return $ fltr msg
 
   makeLogger (FilteringBackend fltr backend) msg = do
     when (fltr msg) $ do
@@ -225,6 +228,42 @@ instance IsLogBackend b => IsLogBackend (Filtering b) where
 
   cleanupLogBackend (FilteringBackend _ b) = cleanupLogBackend b
 
+-- | Filtering backend with mutable filter.
+data FilteringM b = FilteringBackendM (MVar (LogMessage -> Bool)) b
+
+-- | Specify filter as @LogFilter@. This filter can be changed later.
+filteringM :: IsLogBackend b => LogFilter -> LogBackendSettings b -> IO (LogBackendSettings (FilteringM b))
+filteringM fltr b = do
+  fltrVar <- newMVar (checkLogLevel fltr)
+  return $ FilteringM fltrVar b
+
+-- | Exclude messages by filter. This filter can be changed later.
+excludingM :: IsLogBackend b => LogFilter -> LogBackendSettings b -> IO (LogBackendSettings (FilteringM b))
+excludingM fltr b = do
+    fltrVar <- newMVar ex
+    return $ FilteringM fltrVar b
+  where
+    ex msg = not $ checkContextFilter' [LogContextFilter Nothing (Just fltr)] (lmSource msg) (lmLevel msg)
+
+instance IsLogBackend b => IsLogBackend (FilteringM b) where
+  data LogBackendSettings (FilteringM b) =
+      FilteringM (MVar (LogMessage -> Bool)) (LogBackendSettings b)
+
+  wouldWriteMessage (FilteringBackendM fltrVar _) msg = do
+    fltr <- readMVar fltrVar
+    return $ fltr msg
+
+  makeLogger (FilteringBackendM fltrVar backend) msg = do
+    fltr <- readMVar fltrVar
+    when (fltr msg) $ do
+      makeLogger backend msg
+
+  initLogBackend (FilteringM fltrVar settings) = do
+    backend <- initLogBackend settings
+    return $ FilteringBackendM fltrVar backend
+
+  cleanupLogBackend (FilteringBackendM _ backend) = cleanupLogBackend backend
+
 -- | Null logging backend, which discards all messages
 -- (passes them to @/dev/null@, if you wish).
 -- This can be used to disable logging.
@@ -233,7 +272,7 @@ data NullBackend = NullBackend
 instance IsLogBackend NullBackend where
   data LogBackendSettings NullBackend = NullLogSettings
 
-  wouldWriteMessage _ _ = False
+  wouldWriteMessage _ _ = return False
 
   makeLogger _ _ = return ()
 
@@ -272,6 +311,10 @@ instance IsLogBackend DynamicBackend where
   cleanupLogBackend (DynamicBackend backendVar settingsVar) = do
     backend <- takeMVar backendVar
     cleanupLogBackend backend
+
+  wouldWriteMessage (DynamicBackend backendVar _) msg = do
+    backend <- readMVar backendVar
+    wouldWriteMessage backend msg
 
   makeLogger (DynamicBackend backendVar settingsVar) msg = do
     mbNewSettings <- tryTakeMVar settingsVar

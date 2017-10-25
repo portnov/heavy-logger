@@ -119,11 +119,11 @@ withLoggingT (LoggingSettings settings) actions =
 -- This function assumes that if some events filtering is enabled by the
 -- backend, it does not depend on message text, only on source and 
 -- severity level.
-isLevelEnabledByBackend :: forall m. (Monad m, HasLogBackend AnyLogBackend m) => LogSource -> Level -> m Bool
+isLevelEnabledByBackend :: forall m. (Monad m, MonadIO m, HasLogBackend AnyLogBackend m) => LogSource -> Level -> m Bool
 isLevelEnabledByBackend src level = do
   backend <- getLogBackend :: m AnyLogBackend
   let msg = LogMessage level src undefined TL.empty () []
-  return $ wouldWriteMessage backend msg
+  liftIO $ wouldWriteMessage backend msg
 
 -- | Check if logging of events of specified level from specified source
 -- is enabled by both context and backend filter.
@@ -131,11 +131,11 @@ isLevelEnabledByBackend src level = do
 -- This function assumes that if some events filtering is enabled by the
 -- backend, it does not depend on message text, only on source and 
 -- severity level.
-isLevelEnabled :: forall m. (Monad m, HasLogBackend AnyLogBackend m, HasLogContext m) => LogSource -> Level -> m Bool
+isLevelEnabled :: forall m. (Monad m, MonadIO m, HasLogBackend AnyLogBackend m, HasLogContext m) => LogSource -> Level -> m Bool
 isLevelEnabled src level = do
   let msg = LogMessage level src undefined TL.empty () []
   backend <- getLogBackend :: m AnyLogBackend
-  let isEnabledByBackend = wouldWriteMessage backend msg
+  isEnabledByBackend <- liftIO $ wouldWriteMessage backend msg
   isEnabledByContext <- checkContextFilterM msg
   return $ isEnabledByContext && isEnabledByBackend
 

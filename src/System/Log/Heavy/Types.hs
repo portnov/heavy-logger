@@ -112,8 +112,8 @@ class IsLogBackend b where
   -- | Should return True if the specified message would be
   -- actually written to the log. Default implementation 
   -- always returns True.
-  wouldWriteMessage :: b -> LogMessage -> Bool
-  wouldWriteMessage _ _ = True
+  wouldWriteMessage :: b -> LogMessage -> IO Bool
+  wouldWriteMessage _ _ = return True
 
   -- | Cleanup logging backend (release resources and so on)
   cleanupLogBackend :: b -> IO ()
