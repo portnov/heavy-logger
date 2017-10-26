@@ -51,12 +51,10 @@ updateDynamicBackendSettings handle settings = do
 -- How to use it:
 --
 -- * Before creating @DynamicSettings@, you have to select some initial
---   @LoggingSettings@ and put them to @MVar@. If you leave the @MVar@ empty,
---   @DymamicBackend@ will be blocked on reading from @MVar@ until you put
---   something there.
--- * When you decide that you want to use new backend settings, put new
---   @LoggingSettings@ to the same @MVar@. @DynamicBackend@ will use new
---   settings for the next logging function call.
+--   @LoggingSettings@ and create @DynamicBackendHandle@ with it.
+-- * When you decide that you want to use new backend settings, call
+--   @updateDynamicBackendSettings@ on existing @DynamicBackendHandle@.
+--   @DynamicBackend@ will use new settings for the next logging function call.
 --
 data DynamicBackend = DynamicBackend {
     dbCurrentBackend :: MVar AnyLogBackend
@@ -68,7 +66,6 @@ instance IsLogBackend DynamicBackend where
 
   initLogBackend (DynamicSettings (DynamicBackendHandle broadcast (LoggingSettings dfltSettings))) = do
     mySettingsChan <- atomically $ dupTChan broadcast
-    putStrLn "3.1"
     backend <- initLogBackend dfltSettings
     backendVar <- newMVar (AnyLogBackend backend)
     return $ DynamicBackend backendVar mySettingsChan

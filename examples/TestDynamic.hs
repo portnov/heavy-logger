@@ -26,13 +26,9 @@ initBackend = "stderr"
 main :: IO ()
 main = do
   let settings = selectBackend initBackend
-  putStrLn "1"
   dynamicHandle <- newDynamicBackendHandle settings
-  putStrLn "2"
   let dynamicSettings = LoggingSettings (DynamicSettings dynamicHandle)
-  putStrLn "3"
   withLoggingT dynamicSettings $ do
-      liftIO $ putStrLn "4"
       liftIO $ forkIO $ worker dynamicSettings
       controller dynamicHandle
 
@@ -40,18 +36,15 @@ worker :: LoggingSettings -> IO ()
 worker settings = do
   withLoggingT settings $ withLogVariable "thread" ("worker" :: String) $ do
     forM_ ([1..] :: [Integer]) $ \counter -> do
-        liftIO $ putStrLn "5"
         $info "Counter is {}." (Single counter)
         liftIO $ threadDelay $ 500 * 1000
 
 controller :: DynamicBackendHandle -> LoggingT IO ()
 controller handle =
     withLogVariable "thread" ("controller" :: String) $ do
-        liftIO $ putStrLn "6"
         go initBackend
   where
     go oldBackendStr = do
-      liftIO $ putStrLn "7"
       $info "Current backend is {}" (Single oldBackendStr)
       liftIO $ putStr "Next backend? "
       liftIO $ hFlush stdout
