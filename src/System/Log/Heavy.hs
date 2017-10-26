@@ -65,8 +65,12 @@ module System.Log.Heavy
     module System.Log.Heavy.LoggingT,
     module System.Log.Heavy.Backends,
     module System.Log.Heavy.Backends.Dynamic,
+    -- * Logging functions
+    logMessage,
+    -- * Run actions with logging
     withLogging, withLoggingF, withLoggingT,
-    isLevelEnabledByBackend, isLevelEnabled,
+    -- * Check current settings
+    isLevelEnabledByBackend, isLevelEnabled
   ) where
 
 import Control.Monad.Trans
@@ -76,6 +80,7 @@ import qualified Data.Text.Lazy as TL
 
 import System.Log.Heavy.Types
 import System.Log.Heavy.Level
+import System.Log.Heavy.Util
 import System.Log.Heavy.LoggingT
 import System.Log.Heavy.Backends
 import System.Log.Heavy.Backends.Dynamic

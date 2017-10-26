@@ -1,4 +1,4 @@
-{-# LANGUAGE OverloadedStrings, TypeSynonymInstances, FlexibleInstances, ExistentialQuantification, TypeFamilies, GeneralizedNewtypeDeriving, StandaloneDeriving, MultiParamTypeClasses, UndecidableInstances, ScopedTypeVariables, AllowAmbiguousTypes, FlexibleContexts #-}
+{-# LANGUAGE OverloadedStrings, TypeSynonymInstances, FlexibleInstances, ExistentialQuantification, TypeFamilies, GeneralizedNewtypeDeriving, StandaloneDeriving, MultiParamTypeClasses, UndecidableInstances, ScopedTypeVariables, FlexibleContexts #-}
 
 -- | This module contains some shortcut functions that can be of use in simple usage cases.
 module System.Log.Heavy.Shortcuts
@@ -15,7 +15,7 @@ import qualified Data.Text.Format.Heavy as F
 
 import System.Log.Heavy.Types
 import System.Log.Heavy.Level
-import System.Log.Heavy.Backends
+import System.Log.Heavy.Util
 
 -- | Message stub with Info severity.
 infoMessage :: F.VarContainer vars => TL.Text -> vars -> LogMessage

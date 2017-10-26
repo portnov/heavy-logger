@@ -12,25 +12,18 @@ module System.Log.Heavy.Backends
   ParallelBackend,
   NullBackend,
   Filtering, filtering, excluding,
-  FilteringM, filteringM, excludingM,
   LogBackendSettings (..),
   -- * Default settings
   defStdoutSettings,
   defStderrSettings,
   defFileSettings,
   defaultSyslogSettings,
-  defaultSyslogFormat,
-  -- * Utilities for other backends implementation
-  checkLogLevel, checkLogLevel',
-  checkContextFilter, checkContextFilter', checkContextFilterM,
-  logMessage
+  defaultSyslogFormat
   ) where
 
 import Control.Monad
 import Control.Monad.Trans (liftIO)
-import Control.Monad.Reader
 import Control.Concurrent
-import Data.List (isPrefixOf)
 import qualified Data.ByteString.Unsafe as BSU
 import qualified Data.Text.Format.Heavy as F
 import qualified System.Posix.Syslog as Syslog
@@ -41,6 +34,7 @@ import Foreign.Marshal.Alloc (free)
 import System.Log.Heavy.Types
 import System.Log.Heavy.Level
 import System.Log.Heavy.Format
+import System.Log.Heavy.Util
 
 -- $description
 --
@@ -62,6 +56,8 @@ import System.Log.Heavy.Format
 --
 -- * Filtering - passes messages, that match specified filter,
 --   to underlying backend.
+--
+-- * FilteringM - similar to Filtering, but allows to change the filter in runtime.
 --
 -- * Parallel - writes messages to several backends in parallel.
 --
@@ -227,42 +223,6 @@ instance IsLogBackend b => IsLogBackend (Filtering b) where
 
   cleanupLogBackend (FilteringBackend _ b) = cleanupLogBackend b
 
--- | Filtering backend with mutable filter.
-data FilteringM b = FilteringBackendM (MVar (LogMessage -> Bool)) b
-
--- | Specify filter as @LogFilter@. This filter can be changed later.
-filteringM :: IsLogBackend b => LogFilter -> LogBackendSettings b -> IO (LogBackendSettings (FilteringM b))
-filteringM fltr b = do
-  fltrVar <- newMVar (checkLogLevel fltr)
-  return $ FilteringM fltrVar b
-
--- | Exclude messages by filter. This filter can be changed later.
-excludingM :: IsLogBackend b => LogFilter -> LogBackendSettings b -> IO (LogBackendSettings (FilteringM b))
-excludingM fltr b = do
-    fltrVar <- newMVar ex
-    return $ FilteringM fltrVar b
-  where
-    ex msg = not $ checkContextFilter' [LogContextFilter Nothing (Just fltr)] (lmSource msg) (lmLevel msg)
-
-instance IsLogBackend b => IsLogBackend (FilteringM b) where
-  data LogBackendSettings (FilteringM b) =
-      FilteringM (MVar (LogMessage -> Bool)) (LogBackendSettings b)
-
-  wouldWriteMessage (FilteringBackendM fltrVar _) msg = do
-    fltr <- readMVar fltrVar
-    return $ fltr msg
-
-  makeLogger (FilteringBackendM fltrVar backend) msg = do
-    fltr <- readMVar fltrVar
-    when (fltr msg) $ do
-      makeLogger backend msg
-
-  initLogBackend (FilteringM fltrVar settings) = do
-    backend <- initLogBackend settings
-    return $ FilteringBackendM fltrVar backend
-
-  cleanupLogBackend (FilteringBackendM _ backend) = cleanupLogBackend backend
-
 -- | Null logging backend, which discards all messages
 -- (passes them to @/dev/null@, if you wish).
 -- This can be used to disable logging.
@@ -278,72 +238,4 @@ instance IsLogBackend NullBackend where
   initLogBackend _ = return NullBackend
 
   cleanupLogBackend _ = return ()
-
--- | Check if message level matches given filter.
-checkLogLevel :: LogFilter -> LogMessage -> Bool
-checkLogLevel fltr m =
-    checkLogLevel' fltr (lmSource m) (lmLevel m)
-
--- | Check if message level matches given filter.
-checkLogLevel' :: LogFilter -> LogSource -> Level -> Bool
-checkLogLevel' fltr source level =
-    case lookup (bestMatch source (map fst fltr)) fltr of
-      Nothing -> False
-      Just min -> level <= min
-  where
-    bestMatch :: LogSource -> [LogSource] -> LogSource
-    bestMatch src list = go [] src list
-
-    go best src [] = best
-    go best src (x:xs)
-      | src == x = x
-      | x `isPrefixOf` src && length x > length best = go x src xs
-      | otherwise = go best src xs
-
--- | Check if message source and level passes specified filters.
---
--- The message is passed if:
---
--- * No @include@ filters are defined in context stack, OR the message conforms to ANY of @include@ filters;
---
--- * AND the message does not conform to any of @exclude@ filters in the stack.
---
-checkContextFilter' :: [LogContextFilter] -> LogSource -> Level -> Bool
-checkContextFilter' filters source level =
-  let includeFilters = [fltr | LogContextFilter (Just fltr) _ <- filters]
-      excludeFilters = [fltr | LogContextFilter _ (Just fltr) <- filters]
-      includeOk = null includeFilters || or [checkLogLevel' fltr source level | fltr <- includeFilters]
-      excludeOk = or [checkLogLevel' fltr source level | fltr <- excludeFilters]
-  in  includeOk && not excludeOk
-
--- | Check if message matches filters from logging context.
---
--- The message is passed if:
---
--- * No @include@ filters are defined in context stack, OR the message conforms to ANY of @include@ filters;
---
--- * AND the message does not conform to any of @exclude@ filters in the stack.
---
-checkContextFilter :: LogContext -> LogMessage -> Bool
-checkContextFilter context msg =
-  checkContextFilter' (map lcfFilter context) (lmSource msg) (lmLevel msg)
-
--- | Check if message matches filters from logging context.
--- This function is similar to @checkContextFilter@, but uses current context
--- from monadic state.
-checkContextFilterM :: HasLogContext m => LogMessage -> m Bool
-checkContextFilterM msg = do
-  context <- getLogContext
-  return $ checkContextFilter context msg
-
--- | Log a message. This will add current context to context specified
--- in the message.
--- This function checks current context filter.
-logMessage :: forall m. (HasLogging m, MonadIO m) => LogMessage -> m ()
-logMessage msg = do
-  ok <- checkContextFilterM msg
-  when ok $ do
-    context <- getLogContext
-    logger <- getLogger
-    liftIO $ logger $ msg {lmContext = context ++ lmContext msg}
 

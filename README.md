@@ -20,7 +20,8 @@ Most notable features of heavy-logger are:
 * Logging backend settings can be defined dynamically; it is not necessary to
   hardcode which backend you will use, you can load settings in runtime.
 * It is possible to change backend or it's settings in runtime (more precisely,
-  you can change underlying backend if you use `DynamicBackend` as a backend).
+  you can change underlying backend if you use `DynamicBackend` as a backend, 
+  or you can change backend's filter if you use `FilteringM` as a backend).
 * Sane default set of logging message severity levels and possibility to define
   custom severity levels.
 * Logging context stacks support (aka mapped diagnostic contexts, MDC). Each

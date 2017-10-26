@@ -20,6 +20,7 @@ library
   exposed-modules:     System.Log.Heavy
                        System.Log.Heavy.Level
                        System.Log.Heavy.Types
+                       System.Log.Heavy.Util
                        System.Log.Heavy.LoggingT
                        System.Log.Heavy.Format
                        System.Log.Heavy.Backends
