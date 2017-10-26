@@ -6,24 +6,13 @@ module System.Log.Heavy.Backends.Dynamic
     DynamicBackendHandle,
     newDynamicBackendHandle,
     updateDynamicBackendSettings,
-    LogBackendSettings (..),
+    LogBackendSettings (..)
   ) where 
-import Control.Monad
-import Control.Monad.Trans (liftIO)
-import Control.Monad.Reader
+
 import Control.Concurrent
 import Control.Concurrent.STM
-import Data.List (isPrefixOf)
-import qualified Data.ByteString.Unsafe as BSU
-import qualified Data.Text.Format.Heavy as F
-import qualified System.Posix.Syslog as Syslog
-import System.Log.FastLogger as FL
-import Foreign.C.String (CString, newCString)
-import Foreign.Marshal.Alloc (free)
 
 import System.Log.Heavy.Types
-import System.Log.Heavy.Level
-import System.Log.Heavy.Format
 
 data DynamicBackendHandle = DynamicBackendHandle {
     dbhBroadcast :: TChan LoggingSettings
