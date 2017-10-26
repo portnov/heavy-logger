@@ -11,7 +11,6 @@ module System.Log.Heavy.Backends
   ChanLoggerBackend,
   ParallelBackend,
   NullBackend,
-  DynamicBackend,
   Filtering, filtering, excluding,
   FilteringM, filteringM, excludingM,
   LogBackendSettings (..),
@@ -279,55 +278,6 @@ instance IsLogBackend NullBackend where
   initLogBackend _ = return NullBackend
 
   cleanupLogBackend _ = return ()
-
--- | Dynamic logging backend allows to change logging backend or it's settings
--- in runtime. When it sees new backend settings, it deinitializes old backend
--- and initializes new one.
---
--- How to use it:
---
--- * Before creating @DynamicSettings@, you have to select some initial
---   @LoggingSettings@ and put them to @MVar@. If you leave the @MVar@ empty,
---   @DymamicBackend@ will be blocked on reading from @MVar@ until you put
---   something there.
--- * When you decide that you want to use new backend settings, put new
---   @LoggingSettings@ to the same @MVar@. @DynamicBackend@ will use new
---   settings for the next logging function call.
---
-data DynamicBackend = DynamicBackend {
-    dbCurrentBackend :: MVar AnyLogBackend
-  , dbNewSettings :: MVar LoggingSettings
-  }
-
-instance IsLogBackend DynamicBackend where
-  data LogBackendSettings DynamicBackend = DynamicSettings (MVar LoggingSettings)
-
-  initLogBackend (DynamicSettings settingsVar) = do
-    LoggingSettings settings <- takeMVar settingsVar
-    backend <- initLogBackend settings
-    backendVar <- newMVar (AnyLogBackend backend)
-    return $ DynamicBackend backendVar settingsVar
-
-  cleanupLogBackend (DynamicBackend backendVar settingsVar) = do
-    backend <- takeMVar backendVar
-    cleanupLogBackend backend
-
-  wouldWriteMessage (DynamicBackend backendVar _) msg = do
-    backend <- readMVar backendVar
-    wouldWriteMessage backend msg
-
-  makeLogger (DynamicBackend backendVar settingsVar) msg = do
-    mbNewSettings <- tryTakeMVar settingsVar
-    case mbNewSettings of
-      Nothing -> do
-          backend <- readMVar backendVar
-          makeLogger backend msg
-      Just (LoggingSettings newSettings) -> do
-          oldBackend <- takeMVar backendVar
-          cleanupLogBackend oldBackend
-          newBackend <- initLogBackend newSettings
-          putMVar backendVar (AnyLogBackend newBackend)
-          makeLogger newBackend msg
 
 -- | Check if message level matches given filter.
 checkLogLevel :: LogFilter -> LogMessage -> Bool

@@ -64,6 +64,7 @@ module System.Log.Heavy
     module System.Log.Heavy.Level,
     module System.Log.Heavy.LoggingT,
     module System.Log.Heavy.Backends,
+    module System.Log.Heavy.Backends.Dynamic,
     withLogging, withLoggingF, withLoggingT,
     isLevelEnabledByBackend, isLevelEnabled,
   ) where
@@ -77,6 +78,7 @@ import System.Log.Heavy.Types
 import System.Log.Heavy.Level
 import System.Log.Heavy.LoggingT
 import System.Log.Heavy.Backends
+import System.Log.Heavy.Backends.Dynamic
 
 -- | Execute actions with logging backend.
 -- This is mostly an utility function to be used to construct custom 
