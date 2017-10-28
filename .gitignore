@@ -1,5 +1,7 @@
 *.hi
 *.o
+*.dyn_o
+*.dyn_hi
 *.swp
 src/Test
 *.log
