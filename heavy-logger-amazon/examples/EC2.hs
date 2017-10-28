@@ -17,10 +17,13 @@ import           Data.Monoid
 import           Network.AWS.Data
 import           Network.AWS.EC2
 import           System.IO
+import           System.Log.Heavy
+import           System.Log.Heavy.IO
+import           System.Log.Heavy.AWS
 
 instanceOverview :: Region -> IO ()
-instanceOverview r = do
-    lgr <- newLogger Info stdout
+instanceOverview r = withLoggingIO (LoggingSettings defStderrSettings) $ do
+    lgr <- getAwsLogger
     let credentials = FromFile "batchd" "credentials"
     env <- newEnv credentials <&> set envLogger lgr
 
