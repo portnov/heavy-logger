@@ -1,7 +1,9 @@
 name:                heavy-logger-amazon
 version:             0.1.0.0
 synopsis:            heavy-logger compatibility with amazonka-core logging
--- description:
+description:         This package is a simple adapter for use of @amazonka@ package with @heavy-logger@.
+                     .
+                     @Amazonka@ has it's own interface for logging. This package provides implementation of that interface by @heavy-logger@.
 homepage:            https://github.com/portnov/heavy-logger-amazon#readme
 license:             BSD3
 license-file:        LICENSE
