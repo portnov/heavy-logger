@@ -2,6 +2,7 @@
 -- @heavy-logging@ package.
 module System.Log.Heavy.AWS
   (awsLogLevelToLevel,
+   toAwsLogger,
    getAwsLogger
   ) where
 
@@ -22,7 +23,12 @@ awsLogLevelToLevel Trace = trace_level
 getAwsLogger :: (Monad m, HasLogger m) => m AWS.Logger
 getAwsLogger = do
     logger <- getLogger
-    return $ \lvl builder -> logger (mkMessage lvl builder)
+    return $ toAwsLogger logger
+
+-- | Convert heavy-logger's SpecializedLogger to Amaoznka's Logger.
+toAwsLogger :: H.SpecializedLogger -> AWS.Logger
+toAwsLogger logger =
+    \lvl builder -> logger (mkMessage lvl builder)
   where
     mkMessage lvl builder =
         LogMessage {
