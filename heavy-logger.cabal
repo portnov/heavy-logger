@@ -1,5 +1,5 @@
 name:                heavy-logger
-version:             0.3.0.0
+version:             0.3.1.0
 synopsis:            Full-weight logging based on fast-logger
 description:         This is Haskell logging library, which prefers functionality and extendability
                      over light weight and simplicity. It can use fast-logger as backend, and is compatible 
