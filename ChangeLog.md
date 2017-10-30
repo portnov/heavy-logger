@@ -23,3 +23,8 @@
 * Added the IO module.
 * Introduced null logging backend.
 
+## 0.3.1.0 -- 2017-10-30
+
+* Introduced Dynamic backend, which allows to change backend or its settings in runtime.
+* Introduced FilteringM backend, which allows to change filtering settings in runtime.
+
