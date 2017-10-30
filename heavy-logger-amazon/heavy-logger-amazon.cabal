@@ -22,7 +22,7 @@ library
                        template-haskell >= 2.10,
                        binary >= 0.8.3.0,
                        text >= 1.2.2.2,
-                       heavy-logger >= 0.3.0.0,
+                       heavy-logger >= 0.3.1.0,
                        amazonka-core >= 1.4.5
   default-language:    Haskell2010
 
