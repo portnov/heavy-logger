@@ -30,28 +30,34 @@ instance Ord Level where
   compare l1 l2 = compare (levelInt l1) (levelInt l2)
 
 -- | TRACE level is supposed to be used for development-stage debugging.
+-- Has integer value of 600.
 trace_level :: Level
 trace_level = Level "TRACE" 600 Syslog.Debug
 
 -- | DEBUG level is supposed to be used for debug logging that can be
 -- enabled on production.
+-- Has integer value of 500.
 debug_level :: Level
 debug_level = Level "DEBUG" 500 Syslog.Debug
 
 -- | INFO level: some event occured.
+-- Has integer value of 400.
 info_level :: Level
 info_level = Level "INFO" 400 Syslog.Info
 
 -- | WARN level: something went wrong, but for now it will not affect
 -- system's stability.
+-- Has integer value of 300.
 warn_level :: Level
 warn_level = Level "WARN" 300 Syslog.Warning
 
 -- | ERROR level: something went wrong.
+-- Has integer value of 200.
 error_level :: Level
 error_level = Level "ERROR" 200 Syslog.Error
 
 -- | FATAL level: something went terribly wrong, application is to be stopped.
+-- Has integer value of 100.
 fatal_level :: Level
 fatal_level = Level "FATAL" 100 Syslog.Emergency
 
