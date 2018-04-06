@@ -18,38 +18,38 @@ import System.Log.Heavy.Level
 import System.Log.Heavy.Util
 
 -- | Message stub with Info severity.
-infoMessage :: F.VarContainer vars => TL.Text -> vars -> LogMessage
+infoMessage :: F.ClosedVarContainer vars => TL.Text -> vars -> LogMessage
 infoMessage fmt vars = LogMessage info_level [] undefined fmt vars []
 
 -- | Message stub with Debug severity.
-debugMessage :: F.VarContainer vars => TL.Text -> vars -> LogMessage
+debugMessage :: F.ClosedVarContainer vars => TL.Text -> vars -> LogMessage
 debugMessage fmt vars = LogMessage debug_level [] undefined fmt vars []
 
 -- | Message stub with Error severity.
-errorMessage :: F.VarContainer vars => TL.Text -> vars -> LogMessage
+errorMessage :: F.ClosedVarContainer vars => TL.Text -> vars -> LogMessage
 errorMessage fmt vars = LogMessage error_level [] undefined fmt vars []
 
 -- | Message stub with Warning severity.
-warnMessage :: F.VarContainer vars => TL.Text -> vars -> LogMessage
+warnMessage :: F.ClosedVarContainer vars => TL.Text -> vars -> LogMessage
 warnMessage fmt vars = LogMessage warn_level [] undefined fmt vars []
 
 -- | Log debug message.
 -- Note: this message will not contain source information.
-debug :: forall m vars. (F.VarContainer vars, MonadIO m, HasLogging m) => TL.Text -> vars -> m ()
+debug :: forall m vars. (F.ClosedVarContainer vars, MonadIO m, HasLogging m) => TL.Text -> vars -> m ()
 debug fmt vars = logMessage $ debugMessage fmt vars
 
 -- | Log info message.
 -- Note: this message will not contain source information.
-info :: forall m vars. (F.VarContainer vars, MonadIO m, HasLogging m) => TL.Text -> vars -> m ()
+info :: forall m vars. (F.ClosedVarContainer vars, MonadIO m, HasLogging m) => TL.Text -> vars -> m ()
 info fmt vars = logMessage $ infoMessage fmt vars
 
 -- | Log error message.
 -- Note: this message will not contain source information.
-reportError :: forall m vars. (F.VarContainer vars, MonadIO m, HasLogging m) => TL.Text -> vars -> m ()
+reportError :: forall m vars. (F.ClosedVarContainer vars, MonadIO m, HasLogging m) => TL.Text -> vars -> m ()
 reportError fmt vars = logMessage $ errorMessage fmt vars
 
 -- | Log warning message.
 -- Note: this message will not contain source information.
-warning :: forall m vars. (F.VarContainer vars, MonadIO m, HasLogging m) => TL.Text -> vars -> m ()
+warning :: forall m vars. (F.ClosedVarContainer vars, MonadIO m, HasLogging m) => TL.Text -> vars -> m ()
 warning fmt vars = logMessage $ warnMessage fmt vars
 

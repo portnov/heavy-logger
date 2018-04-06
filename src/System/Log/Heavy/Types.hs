@@ -47,7 +47,7 @@ type LogSource = [String]
 -- * @System.Log.Heavy.TH@ module exports TH macros, which correctly fill message
 --   source and location.
 --
-data LogMessage = forall vars. F.VarContainer vars => LogMessage {
+data LogMessage = forall vars. F.ClosedVarContainer vars => LogMessage {
     lmLevel :: Level    -- ^ Log message level
   , lmSource :: LogSource  -- ^ Log message source (module)
   , lmLocation :: Loc      -- ^ Log message source (exact location). You usually
