@@ -1,5 +1,7 @@
 {-# LANGUAGE RecordWildCards #-}
-
+-- | This module contains instances of Binary type class for
+-- data types defined in the heavy-logger package.
+--
 module System.Log.Heavy.Instances.Binary where
 
 import Control.Applicative
@@ -66,12 +68,14 @@ instance Binary LogContextFilter where
     <$> get
     <*> get
 
+-- | Serialize Variable with default format
 putVariableNoformat :: Variable -> Put 
 putVariableNoformat var =
   case formatAnyVar Nothing var of
     Left err -> fail err
     Right val -> put (B.toLazyText val)
 
+-- | Deserialize Variable with default format
 getVariableNoformat :: Get Variable
 getVariableNoformat = do
   text <- get
@@ -94,6 +98,14 @@ instance Binary LogContextFrame where
     fltr <- get
     return (LogContextFrame vars fltr)
 
+-- | Please note: this implementation is limited:
+--
+--  * It stores Variables as their Text representation
+--
+--  * It does not take care of correct storing/restoring variable formats
+--
+--  * When deserializing, it always uses @[(Text, Text)]@ as variables container.
+--
 instance Binary LogMessage where
   put (LogMessage {..}) = do
     put lmLevel
