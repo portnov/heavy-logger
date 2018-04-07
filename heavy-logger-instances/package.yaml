@@ -1,5 +1,5 @@
 name:                heavy-logger-instances
-version:             0.1.0.0
+version:             0.2.0.0
 github:              "portnov/heavy-logger"
 license:             BSD3
 author:              "Ilya Portnov"
@@ -10,17 +10,17 @@ extra-source-files:
 - README.md
 - ChangeLog.md
 
-# Metadata used when publishing your package
-synopsis:            Orphan instances for data types in heavy-logger package
-category:            System
+synopsis:         Orphan instances for data types in heavy-logger package
+description: |
+      This package contains orphan instances for data types in heavy-logger package for:
+      * Binary type class (from binary package)
+      * MonadThrow, MonadCatch, MonadMask type classes (from exceptions package) for LoggingT transformer.
 
-# To avoid duplicated efforts in documentation and dealing with the
-# complications of embedding Haddock markup inside cabal files, it is
-# common to point users to the README.md file.
-description:         Orphan instances for data types in heavy-logger package
+category:            System
 
 dependencies:
 - base >= 4.7 && < 5
+- mtl
 - heavy-logger >= 0.3.2.0
 - binary
 - exceptions
