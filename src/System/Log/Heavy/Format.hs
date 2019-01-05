@@ -35,8 +35,10 @@
 -- * Also all variables from context are available.
 --
 module System.Log.Heavy.Format
-  ( defaultLogFormat,
-    formatLogMessage
+  ( LogMessageWithTime (..),
+    defaultLogFormat,
+    formatLogMessage,
+    formatLogMessage'
   ) where
 
 import Control.Applicative
@@ -154,5 +156,9 @@ defaultLogFormat = PF.parseFormat' "{time} [{level}] {source}: {message}\n"
 
 -- | Format log message for output.
 formatLogMessage :: F.Format -> LogMessage -> FormattedTime -> LogStr
-formatLogMessage fmt msg ftime = toLogStr $ F.format fmt $ LogMessageWithTime ftime msg
+formatLogMessage fmt msg ftime = toLogStr $ formatLogMessage' fmt msg ftime
+
+-- | Format log message for output.
+formatLogMessage' :: F.Format -> LogMessage -> FormattedTime -> TL.Text
+formatLogMessage' fmt msg ftime = F.format fmt $ LogMessageWithTime ftime msg
 
