@@ -1,10 +1,10 @@
 name:                heavy-logger-instances
-version:             0.2.0.1
+version:             0.2.1.0
 github:              "portnov/heavy-logger"
 license:             BSD3
 author:              "Ilya Portnov"
 maintainer:          "portnov84@rambler.ru"
-copyright:           "2018 Ilya Portnov"
+copyright:           "2018-2019 Ilya Portnov"
 
 extra-source-files:
 - README.md
@@ -14,7 +14,8 @@ synopsis:         Orphan instances for data types in heavy-logger package
 description: |
       This package contains orphan instances for data types in heavy-logger package for:
       * Binary type class (from binary package)
-      * MonadThrow, MonadCatch, MonadMask type classes (from exceptions package) for LoggingT transformer.
+      * MonadThrow, MonadCatch, MonadMask type classes (from exceptions package)
+      * MonadUnliftIO type class (from unliftio-core package) for LoggingT transformer.
 
 category:            System
 
