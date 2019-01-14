@@ -21,6 +21,7 @@ category:            System
 dependencies:
 - base >= 4.7 && < 5
 - mtl
+- unliftio-core >= 0.1.2.0
 - heavy-logger >= 0.3.2.0
 - binary
 - exceptions
