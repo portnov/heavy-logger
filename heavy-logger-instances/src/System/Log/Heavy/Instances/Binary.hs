@@ -72,7 +72,7 @@ instance Binary LogContextFilter where
 putVariableNoformat :: Variable -> Put 
 putVariableNoformat var =
   case formatAnyVar Nothing var of
-    Left err -> fail err
+    Left err -> error err
     Right val -> put (B.toLazyText val)
 
 -- | Deserialize Variable with default format
