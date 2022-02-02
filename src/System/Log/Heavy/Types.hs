@@ -1,4 +1,5 @@
 {-# LANGUAGE OverloadedStrings, TypeSynonymInstances, FlexibleInstances, ExistentialQuantification, TypeFamilies, GeneralizedNewtypeDeriving, StandaloneDeriving, MultiParamTypeClasses, UndecidableInstances, AllowAmbiguousTypes, ScopedTypeVariables, FunctionalDependencies, FlexibleContexts, ConstraintKinds #-}
+{-# LANGUAGE CPP #-}
 
 -- | This module contains generic types definition, along with some utilities.
 module System.Log.Heavy.Types
@@ -22,6 +23,9 @@ module System.Log.Heavy.Types
 
 import Control.Monad.Reader
 import Control.Monad.Logger (MonadLogger (..))
+#if MIN_VERSION_monad_logger(0,3,10)
+import Control.Monad.Logger (MonadLoggerIO (..))
+#endif
 import Control.Monad.Trans.Control
 import Control.Exception.Lifted (bracket)
 import Language.Haskell.TH
@@ -227,6 +231,26 @@ instance (Monad m, MonadIO m, HasLogging m) => MonadLogger m where
 
       textFromLogStr :: ToLogStr str => str -> TL.Text
       textFromLogStr str = TL.fromStrict $ TE.decodeUtf8 $ fromLogStr $ toLogStr str
+
+#if MIN_VERSION_monad_logger(0,3,10)
+-- | Another compatibility instance.
+instance (Monad m, MonadIO m, HasLogging m) => MonadLoggerIO m where
+  askLoggerIO = do
+      logger <- getLogger
+      context <- getLogContext
+      return $ \loc src level msg ->
+                  logger $ LogMessage {
+                          lmLevel = logLevelToLevel level,
+                          lmSource = (splitDots $ T.unpack src),
+                          lmLocation = loc,
+                          lmFormatString = textFromLogStr msg,
+                          lmFormatVars = (),
+                          lmContext = context
+                        }
+    where
+      textFromLogStr :: ToLogStr str => str -> TL.Text
+      textFromLogStr str = TL.fromStrict $ TE.decodeUtf8 $ fromLogStr $ toLogStr str
+#endif
 
 instance F.Formatable LogStr where
   formatVar fmt str = F.formatVar fmt $ fromLogStr str
